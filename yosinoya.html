@@ -19,12 +19,12 @@
         <!-- Header -->
         <div class="yoshinoya-orange p-6 text-white text-center">
             <h1 class="text-2xl font-black mb-1 text-black">吉野家ルーレット</h1>
-            <p class="text-sm opacity-90 text-black font-bold italic">ポイ活最適化・予算＋100円以内版</p>
+            <p class="text-sm opacity-90 text-black font-bold italic">2人分・期間限定メニュー対応版</p>
         </div>
 
         <div class="p-6">
             <!-- Settings Grid -->
-            <div class="grid grid-cols-2 gap-4 mb-6">
+            <div class="grid grid-cols-2 gap-4 mb-4">
                 <div>
                     <label class="block text-[10px] font-bold text-gray-500 mb-1">食べ方</label>
                     <select onchange="setTaxMode(this.value)" class="w-full p-2 rounded-lg bg-gray-100 font-bold text-sm outline-none border-b-2 border-orange-500">
@@ -41,9 +41,18 @@
                 </div>
             </div>
 
+            <!-- Mode Selector -->
+            <div class="mb-6">
+                <label class="block text-[10px] font-bold text-gray-500 mb-1">人数設定</label>
+                <div class="flex bg-gray-200 p-1 rounded-xl">
+                    <button onclick="setPartySize(1)" id="party-1" class="flex-1 py-2 rounded-lg font-bold transition-all bg-white shadow-sm text-orange-600 text-sm">1人分</button>
+                    <button onclick="setPartySize(2)" id="party-2" class="flex-1 py-2 rounded-lg font-bold transition-all text-gray-500 text-sm">2人分 (メイン2品)</button>
+                </div>
+            </div>
+
             <!-- Budget Selector -->
             <div class="mb-6">
-                <label class="block text-sm font-bold text-gray-700 mb-2 text-center">支払額（割引後）の目標</label>
+                <label class="block text-sm font-bold text-gray-700 mb-2 text-center">1人あたりの支払目標</label>
                 <div class="grid grid-cols-4 gap-1">
                     <button onclick="setBudget(500)" id="btn-500" class="py-2 rounded-lg font-bold border-2 border-orange-500 text-orange-600 text-xs hover:bg-orange-50 transition-colors">500円~</button>
                     <button onclick="setBudget(1000)" id="btn-1000" class="py-2 rounded-lg font-bold border-2 border-orange-500 text-orange-600 text-xs hover:bg-orange-50 transition-colors">1000円~</button>
@@ -54,7 +63,7 @@
 
             <!-- Display Area -->
             <div id="result-container" class="bg-gray-50 rounded-2xl p-4 min-h-[250px] flex flex-col items-center justify-center border-2 border-dashed border-gray-300 relative overflow-hidden">
-                <div id="status-text" class="text-gray-500 font-bold z-10 text-center">条件を選んでスタート！<br><span class="text-xs font-normal">なるべく予算+100円以内に収めます</span></div>
+                <div id="status-text" class="text-gray-500 font-bold z-10 text-center">設定を選んでスタート！<br><span class="text-xs font-normal">メイン料理を人数分必ず選びます</span></div>
                 
                 <div id="menu-list" class="w-full space-y-2 mt-4 hidden z-10">
                     <!-- Items will appear here -->
@@ -62,8 +71,8 @@
 
                 <div id="result-details" class="w-full mt-4 pt-4 border-t border-gray-200 hidden z-10">
                     <div id="discount-row" class="flex justify-between text-red-600 font-bold text-sm hidden">
-                        <span>クーポン割引</span>
-                        <span>-200円</span>
+                        <span>クーポン割引適用</span>
+                        <span id="discount-val">-0円</span>
                     </div>
                     <div class="flex justify-between items-end">
                         <div id="point-info" class="point-badge px-2 py-1 rounded text-[10px] font-bold">
@@ -86,9 +95,13 @@
     <script>
         const rawMenuData = {
             main: [
-                ["牛丼(並)", 453], ["牛丼(アタマ大盛)", 613], ["牛丼(特盛)", 853], ["ねぎ玉牛丼", 583],
-                ["唐揚げ丼(並)", 518], ["鰻重(一枚小盛)", 1058], ["鰻重(二枚盛)", 1818],
-                ["鉄板牛カルビ定食", 658], ["牛サラダ", 578], ["チーズ黒カレー", 588], ["から揚げ定食", 653]
+                ["牛丼(並)", 453], ["牛丼(アタマ大盛)", 613], ["牛丼(大盛)", 673], ["牛丼(特盛)", 853],
+                ["ねぎ玉牛丼", 583], ["唐揚げ丼(並)", 518], ["鰻重(一枚小盛)", 1058],
+                ["鉄板牛カルビ定食", 658], ["牛サラダ", 578], ["チーズ黒カレー", 588], ["から揚げ定食", 653],
+                ["Ｗ定食(牛皿・から揚げ)", 878], ["牛カルビ丼", 598]
+            ],
+            seasonal: [
+                ["牛すき鍋膳(並)", 748], ["牛すき丼(並)", 598], ["麻辣牛鍋膳", 798], ["牛の焼肉定食", 658]
             ],
             side: [
                 ["生卵", 88], ["半熟玉子", 108], ["みそ汁", 77], ["とん汁", 208],
@@ -100,6 +113,7 @@
         let currentBudget = 0;
         let taxRate = 1.08;
         let discountAmount = 0;
+        let partySize = 1;
         let isSpinning = false;
 
         function setTaxMode(val) {
@@ -109,6 +123,17 @@
 
         function setDiscount(val) {
             discountAmount = parseInt(val);
+            if (currentBudget > 0) resetDisplay();
+        }
+
+        function setPartySize(size) {
+            partySize = size;
+            document.getElementById('party-1').className = size === 1 
+                ? 'flex-1 py-2 rounded-lg font-bold transition-all bg-white shadow-sm text-orange-600 text-sm' 
+                : 'flex-1 py-2 rounded-lg font-bold transition-all text-gray-500 text-sm';
+            document.getElementById('party-2').className = size === 2 
+                ? 'flex-1 py-2 rounded-lg font-bold transition-all bg-white shadow-sm text-orange-600 text-sm' 
+                : 'flex-1 py-2 rounded-lg font-bold transition-all text-gray-500 text-sm';
             if (currentBudget > 0) resetDisplay();
         }
 
@@ -128,7 +153,8 @@
             spinBtn.className = 'w-full mt-6 py-4 rounded-full yoshinoya-orange text-white text-xl font-black shadow-lg transition-transform active:scale-95';
             
             resetDisplay();
-            document.getElementById('status-text').innerHTML = `支払額 <span class="text-orange-600">${amount}円〜${amount+100}円</span><br>で構成します！`;
+            const target = partySize === 1 ? amount : amount * 2;
+            document.getElementById('status-text').innerHTML = `支払額 <span class="text-orange-600">${target}円〜${target+(100*partySize)}円</span><br>で構成します！`;
         }
 
         function resetDisplay() {
@@ -150,7 +176,7 @@
             const statusText = document.getElementById('status-text');
             const spinBtn = document.getElementById('spin-btn');
 
-            spinBtn.innerText = "ポイ活計算中...";
+            spinBtn.innerText = "オーダー確認中...";
             spinBtn.disabled = true;
             statusText.innerText = "最適な組み合わせを探しています...";
             resetDisplay();
@@ -168,12 +194,13 @@
             });
 
             document.getElementById('discount-row').classList.toggle('hidden', discountAmount === 0);
+            document.getElementById('discount-val').innerText = `-${discountAmount}円`;
             document.getElementById('total-price').innerText = `${result.finalTotal}円`;
             
             const pts = Math.floor(result.finalTotal / 500);
             document.getElementById('point-info').innerText = `吉野家ポイント： ${pts} pt 獲得`;
 
-            statusText.innerText = `🎯 ぴったりの注文が決まりました 🎯`;
+            statusText.innerText = partySize === 1 ? `🎯 ぴったりの注文が決まりました` : `🎯 2人分の注文が決まりました`;
             menuList.classList.remove('hidden');
             resultDetails.classList.remove('hidden');
             
@@ -183,28 +210,30 @@
         }
 
         function selectMenuLogic() {
-            const mainOptions = rawMenuData.main.map(m => ({ name: m[0], price: getPrice(m[1]) }));
+            // メインと季節限定を統合
+            const allMains = [...rawMenuData.main, ...rawMenuData.seasonal].map(m => ({ name: m[0], price: getPrice(m[1]) }));
             const sideOptions = rawMenuData.side.map(s => ({ name: s[0], price: getPrice(s[1]) }));
             
+            const targetMin = currentBudget * partySize;
+            const targetMax = targetMin + (100 * partySize);
+
             let bestSet = null;
             let minOver = Infinity;
 
-            // 試行回数を増やして予算+100円以内を狙う
-            for(let i=0; i<50; i++) {
+            for(let i=0; i<100; i++) {
                 let selected = [];
                 let subtotal = 0;
                 
-                // メインを1つ選ぶ (支払予算+割引額より安いもの)
-                const possibleMains = mainOptions.filter(m => m.price <= (currentBudget + discountAmount + 100));
-                if (possibleMains.length === 0) continue;
-                
-                const main = possibleMains[Math.floor(Math.random() * possibleMains.length)];
-                selected.push(main);
-                subtotal += main.price;
+                // 人数分のメインを選ぶ
+                for(let p=0; p < partySize; p++) {
+                    const main = allMains[Math.floor(Math.random() * allMains.length)];
+                    selected.push(main);
+                    subtotal += main.price;
+                }
 
-                // サイドを追加していく
+                // 予算に届くまでサイドを追加
                 let innerAttempts = 0;
-                while ((subtotal - discountAmount) < currentBudget && innerAttempts < 10) {
+                while ((subtotal - discountAmount) < targetMin && innerAttempts < 15) {
                     const side = sideOptions[Math.floor(Math.random() * sideOptions.length)];
                     selected.push(side);
                     subtotal += side.price;
@@ -212,14 +241,12 @@
                 }
 
                 const final = subtotal - discountAmount;
-                const overAmount = final - currentBudget;
+                const overAmount = final - targetMin;
 
-                // 予算以上、かつ今までで一番予算に近いもの
-                if (final >= currentBudget && overAmount < minOver) {
+                if (final >= targetMin && overAmount < minOver) {
                     minOver = overAmount;
                     bestSet = { items: [...selected], finalTotal: final };
-                    // もし 予算+50円以内なら即決定
-                    if (overAmount <= 50) break;
+                    if (overAmount <= 40) break; // 良い組み合わせが見つかったら即終了
                 }
             }
 
