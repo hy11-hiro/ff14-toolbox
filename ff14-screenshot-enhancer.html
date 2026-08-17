@@ -208,6 +208,9 @@
     background-image:repeating-conic-gradient(#2b3060 0% 25%, #232748 0% 50%); background-size:16px 16px;
     border-radius:14px; border:1px solid var(--line); overflow:hidden;
   }
+  /* Lash sample reads much better on plain white (closer to actual skin/paper
+     tone than the transparency checkerboard used by the pen/blur/eraser previews). */
+  .previewWrap.lashPreviewWrap{ background-image:none; background-color:#fff; }
   #brushPreviewCanvas{ width:100%; height:100%; display:block; }
   .previewLabel{ text-align:center; font-size:11px; color:var(--text-dim); margin:-6px 0 14px; }
 
@@ -446,9 +449,10 @@
 <div class="sheet" id="lashSheet">
   <div class="sheetHandle"></div>
   <div class="sheetTitle">💫 まつ毛アシスト設定</div>
-  <p style="font-size:11.5px;color:var(--text-dim);line-height:1.7;margin:0 0 12px;">まぶたのキワを軽くなぞると、その形に沿って自然なまつ毛を自動で描き足すよ。指を離した瞬間に生成されるので、気に入らなければ<b style="color:var(--gold);">元に戻す</b>ですぐやり直せます。</p>
+  <p style="font-size:11.5px;color:var(--text-dim);line-height:1.7;margin:0 0 6px;">まぶたのキワを軽くなぞると、その形に沿って自然なまつ毛を自動で描き足すよ。指を離した瞬間に生成されるので、気に入らなければ<b style="color:var(--gold);">元に戻す</b>ですぐやり直せます。</p>
+  <p style="font-size:11px;color:var(--crystal);line-height:1.7;margin:0 0 12px;">💡 なぞる向きでまつ毛の流れが変わるよ。目頭→目尻になぞると外側にキュッと流れ、逆向きだと内側に流れる印象になるよ。</p>
 
-  <div class="previewWrap"><canvas id="lashPreviewCanvas" width="320" height="96"></canvas></div>
+  <div class="previewWrap lashPreviewWrap"><canvas id="lashPreviewCanvas" width="320" height="96"></canvas></div>
   <div class="previewLabel">↑ 今の設定でのまつ毛サンプル</div>
 
   <div class="brushTypeGrid">
@@ -457,12 +461,29 @@
   </div>
 
   <div class="row"><label>密度</label><input type="range" id="lashDensitySlider" min="10" max="100" value="60"><span class="val" id="lashDensityVal">60</span></div>
-  <div class="row"><label>長さ</label><input type="range" id="lashLengthSlider" min="6" max="90" value="32"><span class="val" id="lashLengthVal">32</span></div>
+  <div class="row"><label>束感</label><input type="range" id="lashClumpSlider" min="0" max="100" value="0"><span class="val" id="lashClumpVal">0</span></div>
+  <div class="brushTypeGrid">
+    <div class="lashSideBtn sel" data-lashclumpstyle="spread"><span class="bicon">🍃</span>根元ばらけ</div>
+    <div class="lashSideBtn" data-lashclumpstyle="joined"><span class="bicon">🪭</span>根元そろえ</div>
+  </div>
+  <p style="font-size:11px;color:var(--text-dim);line-height:1.6;margin:-8px 0 14px;">束感を上げると、まつ毛が1本ずつ均等に並ぶ代わりに数本ずつのまとまり（房）になって、房と房の間にすき間ができるよ（0でいつも通りの均等な並び）。「根元ばらけ」は房の中の根元も少しバラけたナチュラルなまとまり方、「根元そろえ」は房の根元をぴったり1点に揃えて、そこから2本＋短めの1本が扇状に開く、手描き風のV字まつ毛になるよ。</p>
+  <div class="row"><label>長さ</label><input type="range" id="lashLengthSlider" min="6" max="160" value="32"><span class="val" id="lashLengthVal">32</span></div>
   <div class="row"><label>カール</label><input type="range" id="lashCurlSlider" min="0" max="100" value="45"><span class="val" id="lashCurlVal">45</span></div>
+
+  <div class="brushTypeGrid">
+    <div class="lashSideBtn sel" data-lashcurl="c"><span class="bicon">〰️</span>Cカール</div>
+    <div class="lashSideBtn" data-lashcurl="j"><span class="bicon">🪝</span>Jカール</div>
+    <div class="lashSideBtn" data-lashcurl="wispy"><span class="bicon">🌾</span>毛先ばらけ</div>
+  </div>
+  <p style="font-size:11px;color:var(--text-dim);line-height:1.6;margin:-8px 0 14px;">Cカールは根元から毛先まで均一に丸くしなる、ナチュラルなカーブ。Jカールは根元はまっすぐ気味で、後半からなだらかに大きく持ち上がる、ぱっちり系（急な折れ目は作らないよ）。毛先ばらけは1本ごとに毛先の向きをランダムにブレさせて、束感・ワイルド感を出せるよ。どのタイプでも、まつ毛の流れは目の中心付近では立ち上がり気味、外側にいくほど扇状に開いていくようになっているよ。</p>
+
   <div class="row"><label>太さ</label><input type="range" id="lashThicknessSlider" min="1" max="8" step="0.5" value="2.6"><span class="val" id="lashThicknessVal">2.6</span></div>
   <div class="row"><label>ばらつき</label><input type="range" id="lashRandomSlider" min="0" max="100" value="35"><span class="val" id="lashRandomVal">35</span></div>
   <div class="row"><label>不透明度</label><input type="range" id="lashOpacitySlider" min="1" max="100" value="100"><span class="val" id="lashOpacityVal">100</span></div>
-  <p style="font-size:11px;color:var(--text-dim);line-height:1.6;margin:-8px 0 0;">色は「色」ツールで選んだ今のペンカラーを使うよ。まつ毛には黒〜こげ茶あたりがおすすめ。</p>
+  <div class="row"><label>ふちのやわらかさ</label><input type="range" id="lashSoftnessSlider" min="0" max="100" value="0"><span class="val" id="lashSoftnessVal">0</span></div>
+  <p style="font-size:11px;color:var(--text-dim);line-height:1.6;margin:-8px 0 14px;">ふちのやわらかさを上げると、まつ毛の際がふんわりにじんだ質感になるよ。0でくっきり、100でぼやけた感じに。</p>
+
+  <p style="font-size:11px;color:var(--text-dim);line-height:1.6;margin:0;">色は「色」ツールで選んだ今のペンカラーを使うよ。まつ毛には黒〜こげ茶あたりがおすすめ。</p>
 </div>
 
 <!-- Color sheet -->
@@ -695,8 +716,12 @@
     smudgeSize:70,
     smudgeStrength:45,
     lashDensity:60,
+    lashClump:0,
+    lashClumpStyle:'spread',
     lashLength:32,
     lashCurl:45,
+    lashCurlStyle:'c',
+    lashSoftness:0,
     lashThickness:2.6,
     lashRandom:35,
     lashOpacity:100,
@@ -2559,9 +2584,10 @@
     const before = layer.ctx.getImageData(0,0,layer.canvas.width, layer.canvas.height);
     const lashes = buildLashStrokes(pts, {
       density: state.lashDensity, length: state.lashLength, curl: state.lashCurl,
-      thickness: state.lashThickness, randomness: state.lashRandom, side: state.lashSide,
+      curlStyle: state.lashCurlStyle, thickness: state.lashThickness,
+      randomness: state.lashRandom, side: state.lashSide, clump: state.lashClump, clumpStyle: state.lashClumpStyle,
     });
-    paintLashes(layer.ctx, lashes, state.color, state.lashOpacity/100);
+    paintLashes(layer.ctx, lashes, state.color, state.lashOpacity/100, state.lashSoftness);
 
     pushHistory(layer, before);
     if(layer.isPhoto) renderAdjustCanvas(); else refreshLayerThumb(layer);
@@ -2592,8 +2618,12 @@
   }
 
   // Turns a traced guide line into a list of individual tapered lash strokes
-  // (each a quadratic curve: root -> control -> tip). Pure geometry — no
+  // (each a cubic curve: root -> ctrl1 -> ctrl2 -> tip). Pure geometry — no
   // color/compositing here, so it can also drive the settings-sheet preview.
+  // opts.curlStyle: 'c' (uniform round curl), 'j' (straight-ish base that
+  // gradually lifts through the back half, no sudden kink), 'wispy' (natural
+  // curl but each tip flicks off in its own random direction, for a
+  // separated/undone look).
   function buildLashStrokes(guidePts, opts){
     const lens = arcLengths(guidePts);
     const total = lens[lens.length-1];
@@ -2603,68 +2633,191 @@
     const seed = hashStr(guidePts.map(p=>Math.round(p.x)+','+Math.round(p.y)).join('|')) ^ Math.floor(total*7);
     const rng = mulberry32(seed);
     const maxTheta = Math.PI*0.42;   // how far "curl" can sweep the lash toward the trace direction
+    const maxFan = Math.PI*0.22;     // extra sweep added toward the ends of the guide (center-out fan)
+    const style = opts.curlStyle || 'c';
+
+    // 束感 (clump): instead of spreading lashes evenly along the whole guide,
+    // group them into small bundles with a visible gap before the next
+    // bundle — the "束になったまつ毛" look, rather than one continuous fan.
+    // clump=0 keeps the original even spacing untouched.
+    // clumpStyle 'spread' (default): each strand in a bundle keeps its own
+    // root position, just packed close together — a loose natural tuft.
+    // clumpStyle 'joined': every strand in a bundle shares the exact same
+    // root point and only its growth angle differs, so the base looks like
+    // a single point that fans out into 2-3 tips (plus a short one filling
+    // the gap between them) — matches a hand-drawn "V" lash cluster.
+    const clump = Math.max(0, Math.min(100, opts.clump||0))/100;
+    const clumpStyle = opts.clumpStyle || 'spread';
+    let tList = []; // each entry: {t, extraAngle, lenScale}
+    if(clump <= 0.03){
+      for(let i=0;i<n;i++) tList.push({t:(i+0.5)/n, extraAngle:0, lenScale:1});
+    } else if(clumpStyle==='joined'){
+      const perClump = 2.6 + clump*1.6;
+      const numClumps = Math.max(2, Math.round(n/perClump));
+      for(let c=0;c<numClumps;c++){
+        const centerT = Math.min(0.995, Math.max(0.005, (c+0.5)/numClumps));
+        const fanSpread = (Math.PI*0.08) + clump*(Math.PI*0.13); // how wide the tips fan apart from the shared root
+        tList.push({t:centerT, extraAngle:-fanSpread/2, lenScale:1});
+        tList.push({t:centerT, extraAngle: fanSpread/2, lenScale:1});
+        // a shorter strand growing from the same root, filling the gap between the two outer tips
+        tList.push({t:centerT, extraAngle:(rng()-0.5)*fanSpread*0.3, lenScale:0.52+rng()*0.14});
+      }
+    } else {
+      const perClump = 2.1 + clump*2.2;                 // ~2.1 strands/clump at low clump, ~4.3 at max
+      const numClumps = Math.max(2, Math.round(n/perClump));
+      for(let c=0;c<numClumps;c++){
+        const centerT = (c+0.5)/numClumps;
+        const strandCount = Math.max(2, Math.round(2 + rng()*1.6 + clump*1.4));
+        const spread = (0.55/numClumps) * (0.35 + 0.5*(1-clump)); // strands pack tighter as clump increases
+        for(let s=0;s<strandCount;s++){
+          const off = strandCount>1 ? (s-(strandCount-1)/2)/(strandCount-1)*spread : 0;
+          const t = Math.min(0.995, Math.max(0.005, centerT + off + (rng()-0.5)*spread*0.25));
+          tList.push({t, extraAngle:0, lenScale:1});
+        }
+      }
+    }
+
     const lashes = [];
-    for(let i=0;i<n;i++){
-      const t = (i+0.5)/n;
+    for(let i=0;i<tList.length;i++){
+      const {t, extraAngle, lenScale} = tList[i];
       const p = pointAtDistance(guidePts, lens, t*total);
 
       // Two candidate normals to the trace; pick whichever points the right
       // way (up for 上まつげ, down for 下まつげ) — this makes the result
       // correct regardless of which direction the person happened to trace in.
+      // Note this is also *why* trace direction changes the lash flow: dx/dy
+      // below is rotated toward the trace's own tangent (p.tx,p.ty), so
+      // tracing left-to-right vs right-to-left sweeps the lashes the other way.
       let nx = -p.ty, ny = p.tx;
       if(opts.side==='upper' ? ny>0 : ny<0){ nx=-nx; ny=-ny; }
 
       const jitter = (rng()-0.5)*2;
-      const theta = (opts.curl/100)*maxTheta + jitter*(opts.randomness/100)*(Math.PI*0.14);
+      // Fan bias: 0 at the middle of the traced line, ±1 at its two ends, so
+      // lashes near the centre of the lid stand up fairly straight while
+      // lashes toward either corner sweep outward — the "扇状に広がる" look
+      // from the reference image, regardless of which way it was traced.
+      const fanBias = (t-0.5)*2;
+      // extraAngle fans out strands that share one root point (joined clump style).
+      const theta = (opts.curl/100)*maxTheta + fanBias*maxFan*(opts.curl/100) + jitter*(opts.randomness/100)*(Math.PI*0.14) + (extraAngle||0);
       const cosT=Math.cos(theta), sinT=Math.sin(theta);
       let dx = nx*cosT + p.tx*sinT;
       let dy = ny*cosT + p.ty*sinT;
       const dl = Math.hypot(dx,dy)||1; dx/=dl; dy/=dl;
 
-      const lenMul = 0.6 + 0.4*Math.sin(Math.PI*t);            // shorter at both ends, fuller mid-lid
+      const lenMul = (0.6 + 0.4*Math.sin(Math.PI*t)) * (lenScale||1);   // shorter at both ends, fuller mid-lid; lenScale shrinks joined-clump filler strands
       const lenJitter = 1 + (rng()-0.5)*(opts.randomness/100)*0.7;
       const L = Math.max(3, opts.length*lenMul*lenJitter);
-
+      const bend = L*0.22*(opts.curl/100);
       const rootX=p.x, rootY=p.y;
-      const tipX = rootX+dx*L, tipY = rootY+dy*L;
-      const bend = L*0.2*(opts.curl/100);
-      const ctrlX = rootX+dx*L*0.5 + p.tx*bend;
-      const ctrlY = rootY+dy*L*0.5 + p.ty*bend;
+
+      let ctrl1X, ctrl1Y, ctrl2X, ctrl2Y, tipX, tipY;
+      if(style==='j'){
+        // Jカール：付け根はまっすぐ気味、後半になるほどなだらかに大きく持ち
+        // 上がる。tipの向きは他のスタイルと同じ dx/dy のまま（別回転を足さ
+        // ない）ので、根元〜毛先で急な折れ目ができない。
+        ctrl1X = rootX + dx*L*0.46 + p.tx*bend*0.18;
+        ctrl1Y = rootY + dy*L*0.46 + p.ty*bend*0.18;
+        ctrl2X = rootX + dx*L*0.80 + p.tx*bend*1.35;
+        ctrl2Y = rootY + dy*L*0.80 + p.ty*bend*1.35;
+        tipX = rootX + dx*L; tipY = rootY + dy*L;
+      } else if(style==='wispy'){
+        // 毛先ばらけ：軸はナチュラルなカーブのまま、毛先の向きだけ1本ごとに大きくブレさせる
+        const flick = (rng()-0.5)*2*(Math.PI*0.30)*(0.4+opts.randomness/100);
+        const cosF=Math.cos(flick), sinF=Math.sin(flick);
+        let fx = dx*cosF - dy*sinF, fy = dx*sinF + dy*cosF;
+        const fl = Math.hypot(fx,fy)||1; fx/=fl; fy/=fl;
+        ctrl1X = rootX + dx*L*0.33 + p.tx*bend*0.5;
+        ctrl1Y = rootY + dy*L*0.33 + p.ty*bend*0.5;
+        ctrl2X = rootX + dx*L*0.7  + p.tx*bend*0.85;
+        ctrl2Y = rootY + dy*L*0.7  + p.ty*bend*0.85;
+        tipX = rootX + fx*L; tipY = rootY + fy*L;
+      } else {
+        // Cカール：根元から毛先まで均一に丸くしなる、いちばんナチュラルな形
+        ctrl1X = rootX + dx*L*0.33 + p.tx*bend*0.5;
+        ctrl1Y = rootY + dy*L*0.33 + p.ty*bend*0.5;
+        ctrl2X = rootX + dx*L*0.72 + p.tx*bend*0.9;
+        ctrl2Y = rootY + dy*L*0.72 + p.ty*bend*0.9;
+        tipX = rootX + dx*L; tipY = rootY + dy*L;
+      }
 
       const w0 = Math.max(0.6, opts.thickness*(0.85+rng()*0.3));
-      lashes.push({rootX,rootY,ctrlX,ctrlY,tipX,tipY,w0,w1:Math.max(0.3,w0*0.12)});
+      lashes.push({rootX,rootY,ctrl1X,ctrl1Y,ctrl2X,ctrl2Y,tipX,tipY,w0,w1:Math.max(0.3,w0*0.12)});
     }
     return lashes;
   }
 
+  // Evaluates the cubic bezier for a lash at parameter t (0=root, 1=tip).
+  function lashPointAt(l, t){
+    const mt=1-t;
+    return {
+      x: mt*mt*mt*l.rootX + 3*mt*mt*t*l.ctrl1X + 3*mt*t*t*l.ctrl2X + t*t*t*l.tipX,
+      y: mt*mt*mt*l.rootY + 3*mt*mt*t*l.ctrl1Y + 3*mt*t*t*l.ctrl2Y + t*t*t*l.tipY,
+    };
+  }
+
+  // Fills one lash as a single smooth tapered ribbon (sample the curve
+  // finely, offset left/right by the local normal, fill the closed outline)
+  // instead of stamping overlapping circles along it — stamping is what was
+  // causing the "crimped/frizzy" bumpy look at the tip, especially on tight
+  // curls where each stamp's circular edge broke up the silhouette. A single
+  // filled polygon stays a clean, confident curve at any width, like the
+  // manga-style reference.
+  function fillLashRibbon(ctx, l){
+    const approxLen = Math.hypot(l.tipX-l.rootX, l.tipY-l.rootY) + Math.hypot(l.ctrl1X-l.rootX,l.ctrl1Y-l.rootY);
+    const N = Math.max(10, Math.min(28, Math.round(approxLen/2.2)));
+    const pts = [];
+    for(let i=0;i<=N;i++) pts.push(lashPointAt(l, i/N));
+    const left = [], right = [];
+    for(let i=0;i<=N;i++){
+      const t = i/N;
+      const p = pts[i];
+      const p0 = pts[Math.max(0,i-1)], p1 = pts[Math.min(N,i+1)];
+      let tx = p1.x-p0.x, ty = p1.y-p0.y;
+      const tl = Math.hypot(tx,ty)||1; tx/=tl; ty/=tl;
+      const nx = -ty, ny = tx;
+      // Stay close to full width for a while, then taper into a fine point
+      // only near the very tip — a confident brush-like stroke rather than
+      // a needle thin the whole way.
+      const w = l.w0 + (l.w1-l.w0)*Math.pow(t, 1.7);
+      const hw = w/2;
+      left.push({x:p.x+nx*hw, y:p.y+ny*hw});
+      right.push({x:p.x-nx*hw, y:p.y-ny*hw});
+    }
+    ctx.beginPath();
+    ctx.moveTo(left[0].x, left[0].y);
+    for(let i=1;i<=N;i++) ctx.lineTo(left[i].x, left[i].y);
+    for(let i=N;i>=0;i--) ctx.lineTo(right[i].x, right[i].y);
+    ctx.closePath();
+    ctx.fill();
+    // Round off the root so lashes don't start with a hard flat-cut edge.
+    ctx.beginPath();
+    ctx.arc(l.rootX, l.rootY, l.w0/2, 0, Math.PI*2);
+    ctx.fill();
+  }
+
   // Renders lash strokes into `ctx` (real layer canvas or a small preview
   // canvas) tinted with `color`, following the app's existing mask-then-tint
-  // pattern: draw solid strokes onto a scratch canvas (drawSegment always
-  // paints in black), then use that as an alpha mask for the actual color.
-  function paintLashes(ctx, lashes, color, alpha){
+  // pattern: draw solid strokes onto a scratch canvas, then use that as an
+  // alpha mask for the actual color.
+  // `softness` (0-100) blurs that mask before tinting, same idea as the
+  // pen's ふちのやわらかさ, but capped lower since lash strokes are thin.
+  function paintLashes(ctx, lashes, color, alpha, softness){
     if(!lashes.length) return;
     const scratch = document.createElement('canvas');
     scratch.width = ctx.canvas.width; scratch.height = ctx.canvas.height;
     const sctx = scratch.getContext('2d');
-    const segN = 5;
-    for(const l of lashes){
-      let px=l.rootX, py=l.rootY, pw=l.w0;
-      for(let s=1;s<=segN;s++){
-        const t=s/segN, mt=1-t;
-        const x = mt*mt*l.rootX + 2*mt*t*l.ctrlX + t*t*l.tipX;
-        const y = mt*mt*l.rootY + 2*mt*t*l.ctrlY + t*t*l.tipY;
-        const w = l.w0 + (l.w1-l.w0)*t;
-        drawSegment(sctx, px,py,x,y, pw,w);
-        px=x; py=y; pw=w;
-      }
-    }
+    sctx.fillStyle = '#000';
+    for(const l of lashes) fillLashRibbon(sctx, l);
     const tmp = document.createElement('canvas');
     tmp.width = scratch.width; tmp.height = scratch.height;
     const tctx = tmp.getContext('2d');
     tctx.fillStyle = color;
     tctx.fillRect(0,0,tmp.width,tmp.height);
     tctx.globalCompositeOperation = 'destination-in';
+    const blurPx = Math.max(0,(softness||0))/100 * 6;
+    if(blurPx>0) tctx.filter = `blur(${blurPx}px)`;
     tctx.drawImage(scratch,0,0);
+    tctx.filter = 'none';
     ctx.save();
     ctx.globalAlpha = alpha;
     ctx.drawImage(tmp,0,0);
@@ -3027,23 +3180,38 @@
   // ---- Eyelash assist sheet bindings ----
   // Draws a sample eyelid curve at the current settings so density/length/
   // curl/thickness changes are visible before ever touching the real photo.
+  // Renders the settings-sheet lash sample using the exact same
+  // buildLashStrokes/paintLashes call (same units, no fudge factors) that a
+  // real trace would use, on a generously-sized offscreen canvas so nothing
+  // clips even at long length / strong curl / clump — then scales that whole
+  // render down to fit the small preview box. This keeps the preview an
+  // exact match for what drawing on the real photo will actually look like.
   function updateLashPreview(){
     const canvas = document.getElementById('lashPreviewCanvas');
     if(!canvas) return;
     const ctx = canvas.getContext('2d');
     const W = canvas.width, H = canvas.height;
     ctx.clearRect(0,0,W,H);
+
+    const naturalW = 640, naturalH = 320;
     const guide = [];
-    const n = 20;
-    for(let i=0;i<=n;i++){
-      const t = i/n;
-      guide.push({ x: 20 + t*(W-40), y: H*0.62 - Math.sin(t*Math.PI)*(H*0.16) });
+    const gN = 24;
+    for(let i=0;i<=gN;i++){
+      const t = i/gN;
+      guide.push({ x: 70 + t*(naturalW-140), y: naturalH*0.8 - Math.sin(t*Math.PI)*(naturalH*0.16) });
     }
     const lashes = buildLashStrokes(guide, {
-      density: state.lashDensity, length: state.lashLength*0.55, curl: state.lashCurl,
-      thickness: state.lashThickness, randomness: state.lashRandom, side: state.lashSide,
+      density: state.lashDensity, length: state.lashLength, curl: state.lashCurl,
+      curlStyle: state.lashCurlStyle, thickness: state.lashThickness,
+      randomness: state.lashRandom, side: state.lashSide, clump: state.lashClump, clumpStyle: state.lashClumpStyle,
     });
-    paintLashes(ctx, lashes, state.color, state.lashOpacity/100);
+    const off = document.createElement('canvas');
+    off.width = naturalW; off.height = naturalH;
+    paintLashes(off.getContext('2d'), lashes, state.color, state.lashOpacity/100, state.lashSoftness);
+
+    const scale = Math.min(W/naturalW, H/naturalH) * 0.94;
+    const dw = naturalW*scale, dh = naturalH*scale;
+    ctx.drawImage(off, 0,0,naturalW,naturalH, (W-dw)/2, (H-dh)/2, dw, dh);
   }
   function bindLashRange(id, valId, key, suffix, digits){
     const el = document.getElementById(id), vl = document.getElementById(valId);
@@ -3054,16 +3222,34 @@
     });
   }
   bindLashRange('lashDensitySlider','lashDensityVal','lashDensity','');
+  bindLashRange('lashClumpSlider','lashClumpVal','lashClump','');
   bindLashRange('lashLengthSlider','lashLengthVal','lashLength','');
   bindLashRange('lashCurlSlider','lashCurlVal','lashCurl','');
   bindLashRange('lashThicknessSlider','lashThicknessVal','lashThickness','',1);
   bindLashRange('lashRandomSlider','lashRandomVal','lashRandom','');
   bindLashRange('lashOpacitySlider','lashOpacityVal','lashOpacity','');
+  bindLashRange('lashSoftnessSlider','lashSoftnessVal','lashSoftness','');
   document.querySelectorAll('[data-lashside]').forEach(el=>{
     el.addEventListener('click', ()=>{
       document.querySelectorAll('[data-lashside]').forEach(b=>b.classList.remove('sel'));
       el.classList.add('sel');
       state.lashSide = el.dataset.lashside;
+      updateLashPreview();
+    });
+  });
+  document.querySelectorAll('[data-lashcurl]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      document.querySelectorAll('[data-lashcurl]').forEach(b=>b.classList.remove('sel'));
+      el.classList.add('sel');
+      state.lashCurlStyle = el.dataset.lashcurl;
+      updateLashPreview();
+    });
+  });
+  document.querySelectorAll('[data-lashclumpstyle]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      document.querySelectorAll('[data-lashclumpstyle]').forEach(b=>b.classList.remove('sel'));
+      el.classList.add('sel');
+      state.lashClumpStyle = el.dataset.lashclumpstyle;
       updateLashPreview();
     });
   });
