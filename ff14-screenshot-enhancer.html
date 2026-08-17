@@ -1,0 +1,3613 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>加筆ラボ | Kahitsu Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=M+PLUS+Rounded+1c:wght@400;500;700&family=Playfair+Display:ital,wght@0,500;0,700;1,600&family=Dancing+Script:wght@500;700&family=Poppins:wght@400;600;800&family=Caveat:wght@600;700&family=Cinzel:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-deep:#171a33;
+    --bg-panel:#232748;
+    --bg-panel2:#2b3060;
+    --bg-sheet:#20244a;
+    --crystal:#7fe0ff;
+    --crystal-dim:#4fb8dd;
+    --gold:#f3cd8e;
+    --pink:#ffb3c7;
+    --text:#f4f2ff;
+    --text-dim:#9ba0d4;
+    --line:#3a3f72;
+    --danger:#ff8fa3;
+    --safe-top: env(safe-area-inset-top);
+    --safe-bottom: env(safe-area-inset-bottom);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{
+    height:100%; margin:0; overflow:hidden; background:var(--bg-deep);
+    font-family:'M PLUS Rounded 1c', sans-serif; color:var(--text);
+    user-select:none; -webkit-user-select:none;
+  }
+  .disp{font-family:'Zen Maru Gothic', sans-serif;}
+  #app{
+    position:fixed; inset:0; display:flex; flex-direction:column;
+    background:
+      radial-gradient(circle at 15% 8%, rgba(127,224,255,.10), transparent 40%),
+      radial-gradient(circle at 85% 92%, rgba(255,179,199,.10), transparent 45%),
+      var(--bg-deep);
+  }
+
+  /* ---------- HEADER ---------- */
+  header{
+    display:flex; align-items:center; gap:10px;
+    padding:calc(8px + var(--safe-top)) 12px 8px;
+    background:linear-gradient(180deg, var(--bg-panel), rgba(35,39,72,.85));
+    border-bottom:1px solid var(--line);
+    z-index:30;
+  }
+  .logo{
+    width:30px; height:30px; flex:none;
+    filter:drop-shadow(0 0 6px rgba(127,224,255,.6));
+  }
+  header h1{
+    font-size:15px; margin:0; letter-spacing:.03em; font-weight:700;
+    background:linear-gradient(90deg, var(--crystal), var(--pink));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    flex:1; white-space:nowrap;
+  }
+  .hbtn{
+    width:34px; height:34px; border-radius:12px; border:1px solid var(--line);
+    background:var(--bg-panel2); color:var(--text); display:flex; align-items:center; justify-content:center;
+    flex:none; transition:transform .12s;
+  }
+  .hbtn:active{transform:scale(.9); background:var(--crystal-dim); }
+  .hbtn:disabled{opacity:.35;}
+  .hbtn svg{width:17px;height:17px;}
+
+  /* ---------- STAGE ---------- */
+  #stageWrap{
+    position:relative; flex:1; overflow:hidden; touch-action:none;
+    background:
+      linear-gradient(45deg,#1c2040 25%,transparent 25%) 0 0/24px 24px,
+      linear-gradient(-45deg,#1c2040 25%,transparent 25%) 0 0/24px 24px,
+      linear-gradient(45deg,transparent 75%,#1c2040 75%) 0 0/24px 24px,
+      linear-gradient(-45deg,transparent 75%,#1c2040 75%) 0 0/24px 24px,
+      #171a33;
+  }
+  #world{ position:absolute; top:0; left:0; transform-origin:0 0; will-change:transform; isolation:isolate; }
+  #world canvas{ position:absolute; top:0; left:0; display:block; image-rendering:pixelated; }
+  #world canvas.smooth{ image-rendering:auto; }
+
+  #emptyState{
+    position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:14px; text-align:center; padding:0 30px; pointer-events:none;
+  }
+  #emptyState.hidden{display:none;}
+  #emptyState .sparkle{ width:64px; height:64px; opacity:.9; animation:float 3.2s ease-in-out infinite; }
+  #emptyState h2{ font-family:'Zen Maru Gothic'; font-size:17px; color:var(--text); margin:0; }
+  #emptyState p{ font-size:12.5px; color:var(--text-dim); line-height:1.7; margin:0; }
+  #importBtnBig{
+    pointer-events:auto; margin-top:6px; padding:12px 26px; border-radius:22px; border:none;
+    background:linear-gradient(120deg, var(--crystal), #a3c9ff);
+    color:#101431; font-weight:700; font-size:13.5px; font-family:'M PLUS Rounded 1c';
+    box-shadow:0 6px 18px rgba(127,224,255,.35);
+  }
+  @keyframes float{ 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+
+  #cursorDot{
+    position:absolute; border:1.6px solid var(--crystal); border-radius:50%;
+    pointer-events:none; transform:translate(-50%,-50%); mix-blend-mode:difference;
+    display:none; z-index:20; box-shadow:0 0 0 1px rgba(0,0,0,.4) inset;
+  }
+
+  #zoomBadge{
+    position:absolute; left:10px; bottom:10px; padding:5px 10px; border-radius:12px;
+    background:rgba(23,26,51,.75); border:1px solid var(--line); font-size:11px; color:var(--crystal);
+    backdrop-filter:blur(4px); letter-spacing:.03em; z-index:20;
+  }
+
+  /* ---------- BOTTOM TOOLBAR ----------
+     Split into two rows grouped by relevance so nothing needs horizontal
+     scrolling: row 1 is drawing tools (pen/blur/eraser) plus their shared
+     brush settings; row 2 is color + the tools that go with picking/placing
+     things (eyedropper sits next to color, move/place/import together).
+     画像調整 (image adjustments) moved up into the header instead of living
+     down here, per feedback that it should be "at the top". */
+  #toolbar{
+    position:relative; z-index:30;
+    display:flex; flex-direction:column; gap:6px; padding:8px 8px calc(8px + var(--safe-bottom));
+    background:linear-gradient(0deg, var(--bg-panel), rgba(35,39,72,.9));
+    border-top:1px solid var(--line);
+  }
+  .toolRow{ display:flex; align-items:center; gap:6px; justify-content:center; }
+  .tool{
+    flex:1; max-width:66px; height:52px; border-radius:16px; border:1px solid transparent;
+    background:var(--bg-panel2); display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:2px; color:var(--text-dim); transition:.12s;
+  }
+  .tool svg{width:19px;height:19px;}
+  .tool span{font-size:8.5px; font-weight:500;}
+  .tool.active{
+    background:linear-gradient(150deg, rgba(127,224,255,.22), rgba(255,179,199,.18));
+    border-color:var(--crystal); color:var(--text);
+    box-shadow:0 0 0 1px rgba(127,224,255,.25) inset;
+  }
+  .tool:active{transform:scale(.93);}
+  #toolbar .sep{width:1px; height:32px; background:var(--line); flex:none; margin:0 2px;}
+
+  .swatchPreview{
+    width:22px; height:22px; border-radius:50%; border:2px solid rgba(255,255,255,.6);
+    box-shadow:0 0 0 1px rgba(0,0,0,.3);
+  }
+
+  /* ---------- SHEETS ---------- */
+  /* This used to be a semi-opaque rgba(10,11,25,.45) dimmer covering the whole
+     screen (inset:0) — including the entire visible canvas/image above the
+     sheet, not just the area directly behind it. That's what made the photo
+     look like it had a faint dark filter over it the instant ANY sheet (画像調整
+     included) was opened, even with every adjustment slider still at 0 — the
+     darkening had nothing to do with 明るさ/コントラスト/etc. at all. It's now
+     fully transparent so the image is never visually altered while a sheet is
+     open; it's kept as an invisible full-screen tap target purely so tapping
+     outside the sheet still closes it.
+     */
+  .sheetBackdrop{
+    position:absolute; inset:0; background:transparent; z-index:39; opacity:0; pointer-events:none; transition:opacity .18s;
+  }
+  .sheetBackdrop.show{ opacity:1; pointer-events:auto; }
+  .sheetBackdrop.passthrough{ pointer-events:none; }
+  .sheet{
+    position:absolute; left:0; right:0; bottom:0; z-index:40;
+    background:var(--bg-sheet); border-radius:22px 22px 0 0; border:1px solid var(--line); border-bottom:none;
+    padding:10px 16px calc(16px + var(--safe-bottom));
+    transform:translateY(105%); transition:transform .22s cubic-bezier(.2,.8,.3,1);
+    max-height:62vh; overflow-y:auto;
+  }
+  .sheet.show{ transform:translateY(0); }
+  .sheetHandle{ width:36px; height:4px; border-radius:3px; background:var(--line); margin:2px auto 12px; }
+  .sheetTitle{ font-family:'Zen Maru Gothic'; font-size:14px; font-weight:700; margin:0 0 12px; color:var(--crystal); display:flex; align-items:center; gap:6px;}
+
+  .row{ display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+  .row label{ font-size:12px; color:var(--text-dim); width:82px; flex:none; }
+  .row .val{ width:38px; flex:none; text-align:right; font-size:11.5px; color:var(--gold); font-weight:700;}
+  input[type=range]{
+    -webkit-appearance:none; appearance:none; flex:1; height:6px; border-radius:4px;
+    background:var(--line); outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; width:19px; height:19px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #fff, var(--crystal) 60%, var(--crystal-dim));
+    border:2px solid #1a1e3a; box-shadow:0 1px 4px rgba(0,0,0,.4); cursor:pointer;
+  }
+  .togRow{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .togRow label{ font-size:12px; color:var(--text-dim); }
+  .toggle{ width:42px; height:24px; border-radius:14px; background:var(--line); position:relative; flex:none; border:none; }
+  .toggle::after{ content:''; position:absolute; top:2px; left:2px; width:20px; height:20px; border-radius:50%; background:var(--text); transition:.15s; }
+  .toggle.on{ background:linear-gradient(90deg,var(--crystal-dim),var(--crystal)); }
+  .toggle.on::after{ left:20px; background:#0f1330; }
+
+  .swatchGrid{ display:flex; flex-wrap:wrap; gap:9px; margin-bottom:12px; }
+  .swatch{ width:30px; height:30px; border-radius:50%; border:2px solid rgba(255,255,255,.25); position:relative; }
+  .swatch.sel{ border-color:var(--crystal); box-shadow:0 0 0 2px rgba(127,224,255,.35); }
+  .colorCustom{ display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  .colorCustom input[type=color]{ width:36px; height:36px; border:none; border-radius:10px; background:none; padding:0; }
+  .colorCustom span{ font-size:11.5px; color:var(--text-dim); }
+
+  .brushTypeGrid{ display:flex; gap:8px; margin-bottom:14px; }
+  .btype{ flex:1; padding:9px 4px; border-radius:14px; background:var(--bg-panel2); border:1px solid var(--line);
+    text-align:center; font-size:10.5px; color:var(--text-dim); }
+  .btype.sel{ border-color:var(--gold); color:var(--gold); background:rgba(243,205,142,.1); }
+  .btype .bicon{ font-size:16px; display:block; margin-bottom:3px; }
+
+  /* Live "what will this pen actually draw" preview, and the matching one for
+     canvas-size selection below — both use the same checkerboard treatment as
+     the existing blur-size preview so the whole app stays visually consistent. */
+  .previewWrap{
+    display:flex; align-items:center; justify-content:center; height:96px; margin-bottom:14px;
+    background-image:repeating-conic-gradient(#2b3060 0% 25%, #232748 0% 50%); background-size:16px 16px;
+    border-radius:14px; border:1px solid var(--line); overflow:hidden;
+  }
+  #brushPreviewCanvas{ width:100%; height:100%; display:block; }
+  .previewLabel{ text-align:center; font-size:11px; color:var(--text-dim); margin:-6px 0 14px; }
+
+  .presetRow{ display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; margin-bottom:14px; }
+  .presetChip{ flex:none; padding:9px 14px; border-radius:14px; background:var(--bg-panel2); border:1px solid var(--line);
+    font-size:11.5px; color:var(--text-dim); white-space:nowrap; }
+  .presetChip.sel{ border-color:var(--gold); color:var(--gold); background:rgba(243,205,142,.1); }
+  .transformRow{ display:flex; gap:8px; margin-bottom:6px; }
+  .xbtn{ flex:1; padding:11px 4px; border-radius:14px; background:var(--bg-panel2); border:1px solid var(--line);
+    color:var(--text); font-size:11px; display:flex; flex-direction:column; align-items:center; gap:4px; }
+  .xbtn svg{ width:18px; height:18px; }
+  .xbtn.warn{ color:var(--danger); }
+  #cursorDot.eyedrop{ border-width:2.5px; box-shadow:0 0 0 2px rgba(0,0,0,.5), 0 0 8px rgba(0,0,0,.4); mix-blend-mode:normal; }
+
+  /* Layers sheet */
+  .layerItem{
+    display:flex; align-items:center; gap:10px; padding:8px; border-radius:14px; margin-bottom:8px;
+    background:var(--bg-panel2); border:1px solid var(--line);
+  }
+  .layerItem.active{ border-color:var(--crystal); background:rgba(127,224,255,.08); }
+  .layerThumb{ width:42px; height:42px; border-radius:8px; object-fit:cover; background:#0e1128; border:1px solid var(--line); flex:none; }
+  .layerInfo{ flex:1; min-width:0; }
+  .layerInfo .lname{ font-size:12px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .layerInfo .lop{ display:flex; align-items:center; gap:6px; margin-top:3px; }
+  .layerInfo input[type=range]{ height:4px; }
+  .blendSelect{
+    margin-top:4px; width:100%; font-size:10.5px; padding:3px 6px; border-radius:8px;
+    background:var(--bg-sheet); border:1px solid var(--line); color:var(--crystal);
+    font-family:'M PLUS Rounded 1c';
+  }
+  .layerBtns{ display:flex; flex-direction:column; gap:4px; flex:none; }
+  .miniBtn{ width:26px; height:22px; border-radius:8px; background:var(--bg-sheet); border:1px solid var(--line); color:var(--text-dim); font-size:11px; }
+  .miniBtn.danger{ color:var(--danger); }
+  .miniBtn.merge{ color:var(--gold); }
+  .miniBtn.edgeBtn{ width:auto; padding:2px 7px; height:20px; font-size:9.5px; }
+  .miniBtn.edgeBtn.sel{ border-color:var(--gold); color:var(--gold); background:rgba(243,205,142,.1); }
+  .cropHandle{ width:22px; height:22px; border-radius:50%; background:var(--gold); border:2px solid #1a1420; box-shadow:0 1px 4px rgba(0,0,0,.4); touch-action:none; }
+  .layerItem{ cursor:pointer; }
+  #addLayerBtn{
+    width:100%; padding:10px; border-radius:14px; border:1.5px dashed var(--crystal-dim); background:none;
+    color:var(--crystal); font-size:12.5px; font-weight:700; margin-top:4px;
+  }
+  #flattenAllBtn{
+    width:100%; padding:10px; border-radius:14px; border:1.5px solid var(--line); background:var(--bg-panel2);
+    color:var(--gold); font-size:12.5px; font-weight:700; margin-top:8px;
+  }
+
+  /* ---------- Custom color picker (hue + saturation/value square + numeric input) ----------
+     Replaces the old native <input type=color> (which pops a separate OS dialog and
+     doesn't show any colors "up front"). This version is always visible/laid out in
+     the sheet immediately, like the preset swatches above it. */
+  .customPickerWrap{ position:relative; width:100%; height:150px; border-radius:14px; overflow:hidden; margin-bottom:10px; border:1px solid var(--line); touch-action:none; }
+  #svCanvas{ width:100%; height:100%; display:block; }
+  .svCursor{
+    position:absolute; width:18px; height:18px; border-radius:50%; border:2px solid #fff;
+    box-shadow:0 0 0 1px rgba(0,0,0,.5), 0 1px 4px rgba(0,0,0,.4); transform:translate(-50%,-50%);
+    pointer-events:none; top:0; left:0;
+  }
+  .hueSliderWrap{ position:relative; height:20px; border-radius:10px; margin-bottom:14px; touch-action:none;
+    background:linear-gradient(90deg,#ff0000,#ffff00,#00ff00,#00ffff,#0000ff,#ff00ff,#ff0000);
+    border:1px solid var(--line);
+  }
+  #hueSlider{
+    position:absolute; inset:0; width:100%; height:100%; margin:0; opacity:0; cursor:pointer;
+  }
+  .hueThumb{
+    position:absolute; top:50%; width:14px; height:26px; border-radius:6px; background:#fff;
+    border:2px solid #1a1e3a; box-shadow:0 1px 4px rgba(0,0,0,.4); transform:translate(-50%,-50%);
+    pointer-events:none; left:0;
+  }
+  .numColorRow{ display:flex; align-items:center; gap:8px; margin-bottom:12px; }
+  .hexBox{ display:flex; align-items:center; gap:4px; flex:1; background:var(--bg-panel2); border:1px solid var(--line); border-radius:12px; padding:0 10px; height:38px; }
+  .hexBox span{ color:var(--text-dim); font-size:13px; }
+  .hexBox input{ flex:1; min-width:0; background:none; border:none; color:var(--text); font-size:13px; font-family:'M PLUS Rounded 1c'; outline:none; letter-spacing:.03em; }
+  .rgbBox{ display:flex; align-items:center; gap:3px; background:var(--bg-panel2); border:1px solid var(--line); border-radius:10px; padding:2px 6px; }
+  .rgbBox span{ font-size:9.5px; color:var(--text-dim); }
+  .rgbBox input{ width:32px; background:none; border:none; color:var(--text); font-size:12px; text-align:center; outline:none; font-family:'M PLUS Rounded 1c'; }
+  .customPreviewSwatch{ width:34px; height:34px; border-radius:50%; border:2px solid rgba(255,255,255,.6); box-shadow:0 0 0 1px rgba(0,0,0,.3); flex:none; }
+
+  #toast{
+    position:absolute; top:calc(10px + var(--safe-top) + 46px); left:50%; transform:translateX(-50%) translateY(-10px);
+    background:var(--bg-panel2); border:1px solid var(--crystal-dim); color:var(--text); font-size:12px;
+    padding:9px 16px; border-radius:14px; z-index:60; opacity:0; transition:.25s; pointer-events:none; white-space:nowrap;
+  }
+  #toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+  input[type=file]{ display:none; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header>
+    <svg class="logo" viewBox="0 0 40 40"><polygon points="20,2 34,14 28,38 12,38 6,14" fill="url(#g1)" stroke="#fff" stroke-opacity="0.5" stroke-width="1"/><defs><linearGradient id="g1" x1="0" y1="0" x2="40" y2="40"><stop offset="0" stop-color="#7fe0ff"/><stop offset="1" stop-color="#ffb3c7"/></linearGradient></defs></svg>
+    <h1 class="disp">加筆ラボ</h1>
+    <button class="hbtn" id="undoBtn" title="元に戻す"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a6 6 0 0 1 0 12h-1"/></svg></button>
+    <button class="hbtn" id="redoBtn" title="やり直す"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m15 14 5-5-5-5"/><path d="M20 9H9a6 6 0 0 0 0 12h1"/></svg></button>
+    <button class="hbtn" id="layersHeaderBtn" title="レイヤー"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="m12 2 9 5-9 5-9-5 9-5Z"/><path d="m3 12 9 5 9-5"/><path d="m3 17 9 5 9-5"/></svg></button>
+    <button class="hbtn" id="adjustToolBtn" title="画像調整"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 21V14"/><path d="M4 10V3"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M20 21v-5"/><path d="M20 12V3"/><circle cx="4" cy="12" r="2"/><circle cx="12" cy="10" r="2"/><circle cx="20" cy="14" r="2"/></svg></button>
+    <button class="hbtn" id="exportBtn" title="保存"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg></button>
+  </header>
+
+  <div id="stageWrap">
+    <div id="world"></div>
+    <div id="emptyState">
+      <svg class="sparkle" viewBox="0 0 64 64"><polygon points="32,4 54,22 44,60 20,60 10,22" fill="none" stroke="#7fe0ff" stroke-width="2"/><polygon points="32,16 44,26 38,50 26,50 20,26" fill="#ffb3c7" opacity="0.5"/></svg>
+      <h2 class="disp">スクリーンショットを読み込んでね</h2>
+      <p>まつ毛を描いたり、肌をなめらかにしたり、<br>瞳を描き直したり — キャラをもっと可愛く加筆しよう。</p>
+      <button id="importBtnBig">📷 写真を選ぶ</button>
+      <button id="newCollageBtn" style="pointer-events:auto;margin-top:2px;padding:10px 22px;border-radius:22px;border:1.5px dashed var(--pink);background:none;color:var(--pink);font-weight:700;font-size:12.5px;font-family:'M PLUS Rounded 1c';">🖼️ サイズを選んでコラージュ作成</button>
+    </div>
+    <div id="cursorDot"></div>
+    <div id="zoomBadge">100%</div>
+
+    <!-- Crop overlay: shown only while a photo layer is being cropped. Dims
+         everything outside the crop rect, and provides a draggable rect with
+         corner handles to define it. Positions are set in JS from canvas
+         coordinates via canvasToScreen() on every frame the crop tool is active. -->
+    <div id="cropOverlay" style="display:none;position:absolute;inset:0;z-index:45;pointer-events:none;">
+      <div id="cropDim" style="position:absolute;inset:0;background:rgba(10,8,20,.55);pointer-events:auto;touch-action:none;"></div>
+      <div id="cropRect" style="position:absolute;border:1.5px solid var(--gold);box-shadow:0 0 0 2000px rgba(10,8,20,.55) inset, 0 0 0 1px rgba(0,0,0,.4);pointer-events:auto;touch-action:none;">
+        <div id="cropRectHole" style="position:absolute;inset:0;"></div>
+        <div class="cropHandle" data-corner="tl" style="position:absolute;left:-11px;top:-11px;"></div>
+        <div class="cropHandle" data-corner="tr" style="position:absolute;right:-11px;top:-11px;"></div>
+        <div class="cropHandle" data-corner="bl" style="position:absolute;left:-11px;bottom:-11px;"></div>
+        <div class="cropHandle" data-corner="br" style="position:absolute;right:-11px;bottom:-11px;"></div>
+      </div>
+    </div>
+    <div id="cropBar" style="display:none;position:fixed;left:50%;bottom:150px;transform:translateX(-50%);z-index:46;gap:10px;">
+      <button id="cropCancelBtn" style="padding:10px 20px;border-radius:20px;border:1px solid var(--line);background:var(--bg-sheet);color:var(--text-dim);font-weight:700;font-size:12.5px;">キャンセル</button>
+      <button id="cropApplyBtn" style="padding:10px 20px;border-radius:20px;border:none;background:var(--gold);color:#1a1420;font-weight:700;font-size:12.5px;">✂️ 切り抜く</button>
+    </div>
+  </div>
+
+  <div id="toolbar">
+    <div class="toolRow">
+      <button class="tool active" data-tool="pen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19 7-7 3 3-7 7-3-3z"/><path d="m18 13-1.5-7.5L2 2l3.5 14.5L13 18z"/><path d="m2 2 7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg><span>ペン</span></button>
+      <button class="tool" data-tool="blur"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9" stroke-dasharray="2 3"/><circle cx="12" cy="12" r="3"/></svg><span>ぼかし</span></button>
+      <button class="tool" data-tool="smudge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21c-2-3-2-6 0-9s2-6 0-9"/><path d="M13 21c-1.6-3-1.6-6 0-9s1.6-6 0-9"/><path d="M18 21c-1.2-3-1.2-6 0-9s1.2-6 0-9"/></svg><span>なぞる</span></button>
+      <button class="tool" data-tool="eraser"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 21-4.3-4.3a1 1 0 0 1 0-1.4l9.6-9.6a1 1 0 0 1 1.4 0l5.6 5.6a1 1 0 0 1 0 1.4L13 18"/><path d="M22 21H7"/></svg><span>消しゴム</span></button>
+      <button class="tool" id="brushToolBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20c1-4 2-8 6-8s5 4 6 8"/><circle cx="17" cy="6" r="3"/></svg><span>ブラシ設定</span></button>
+    </div>
+    <div class="toolRow">
+      <button class="tool" id="colorToolBtn"><span class="swatchPreview" id="colorPreview" style="background:#2b2118"></span><span>色</span></button>
+      <button class="tool" data-tool="eyedropper"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m2 22 1-4 9.5-9.5 3 3L6 21z"/><path d="m17.5 4.5 2 2"/><path d="M16 6l-2.5-2.5a1 1 0 0 1 0-1.4L15 .6a1 1 0 0 1 1.4 0L20.9 5a1 1 0 0 1 0 1.4l-1.5 1.5a1 1 0 0 1-1.4 0L15.5 5.4"/></svg><span>スポイト</span></button>
+      <button class="tool" data-tool="pan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg><span>移動</span></button>
+      <button class="tool" data-tool="imgmove"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9 2 12l3 3"/><path d="M9 5l3-3 3 3"/><path d="M15 19l3 3 3-3"/><path d="M19 9l3 3-3 3"/><path d="M2 12h20"/><path d="M12 2v20"/></svg><span>配置</span></button>
+      <button class="tool" id="importBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10.5" r="1.5"/><path d="m21 15-5-5L5 19"/></svg><span>読込</span></button>
+    </div>
+  </div>
+
+</div>
+
+<input type="file" id="fileInput" accept="image/*">
+<input type="file" id="collageFileInput" accept="image/*" multiple>
+<div id="toast"></div>
+<div class="sheetBackdrop" id="backdrop"></div>
+
+<!-- Brush settings sheet -->
+<div class="sheet" id="brushSheet">
+  <div class="sheetHandle"></div>
+  <div class="sheetTitle">🖌️ ブラシ設定</div>
+
+  <div class="previewWrap"><canvas id="brushPreviewCanvas" width="320" height="96"></canvas></div>
+  <div class="previewLabel">↑ 今の設定で実際に描かれる線の見本です</div>
+
+  <div class="brushTypeGrid">
+    <div class="btype sel" data-btype="hard"><span class="bicon">✒️</span>Gペン</div>
+    <div class="btype" data-btype="plain"><span class="bicon">🖋️</span>普通のペン</div>
+    <div class="btype" data-btype="soft"><span class="bicon">☁️</span>エアブラシ</div>
+    <div class="btype" data-btype="marker"><span class="bicon">🖊️</span>厚塗り</div>
+    <div class="btype" data-btype="glitter"><span class="bicon">✨</span>グリッター</div>
+  </div>
+
+  <div id="glitterControls" style="display:none;">
+    <div class="row"><label>ラメの大きさ</label><input type="range" id="glitterSizeSlider" min="1" max="10" value="3"><span class="val" id="glitterSizeVal">3</span></div>
+    <div class="row"><label>ラメの量</label><input type="range" id="glitterDensitySlider" min="10" max="100" value="55"><span class="val" id="glitterDensityVal">55</span></div>
+  </div>
+
+  <div class="row"><label>太さ</label><input type="range" id="sizeSlider" min="1" max="120" value="10"><span class="val" id="sizeVal">10</span></div>
+  <div class="row"><label>不透明度</label><input type="range" id="opSlider" min="1" max="100" value="100"><span class="val" id="opVal">100</span></div>
+  <div class="row"><label>ふちのやわらかさ</label><input type="range" id="softSlider" min="0" max="100" value="0"><span class="val" id="softVal">0</span></div>
+  <p style="font-size:11px;color:var(--text-dim);line-height:1.6;margin:-8px 0 14px;">ふちのやわらかさを上げると、Gペンでもふんわりにじんだ線になります。0でくっきり、100でエアブラシ並みにぼやけます。</p>
+
+  <div class="togRow"><label>筆圧感知（Pencil）</label><button class="toggle on" id="pressureTog"></button></div>
+  <div class="row"><label>手ぶれ補正</label><input type="range" id="stabSlider" min="0" max="10" value="4"><span class="val" id="stabVal">4</span></div>
+
+  <div class="togRow"><label>強制入り抜き</label><button class="toggle on" id="taperTog"></button></div>
+  <div class="row"><label>入りの長さ</label><input type="range" id="taperInSlider" min="0" max="100" value="35"><span class="val" id="taperInVal">35%</span></div>
+  <div class="row"><label>抜きの長さ</label><input type="range" id="taperOutSlider" min="0" max="100" value="35"><span class="val" id="taperOutVal">35%</span></div>
+</div>
+
+<!-- Eraser settings sheet — deliberately separate from the pen's ブラシ設定 (which
+     shares a single 太さ with the pen). Sharing one size caused the eraser to
+     silently inherit whatever the pen was last set to, which made erasing feel
+     unpredictable. The eraser now has its own independent size/opacity. -->
+<div class="sheet" id="eraserSheet">
+  <div class="sheetHandle"></div>
+  <div class="sheetTitle">🧽 消しゴム設定</div>
+  <div class="row"><label>消しゴムの大きさ</label><input type="range" id="eraserSizeSlider" min="1" max="150" value="24"><span class="val" id="eraserSizeVal">24</span></div>
+  <div class="previewWrap">
+    <div id="eraserSizePreview" style="border-radius:50%;background:rgba(255,255,255,.12);border:2px dashed var(--text-dim);"></div>
+  </div>
+  <div class="row"><label>消しゴムの不透明度</label><input type="range" id="eraserOpSlider" min="1" max="100" value="100"><span class="val" id="eraserOpVal">100</span></div>
+  <p style="font-size:11px;color:var(--text-dim);line-height:1.6;margin:-8px 0 0;">不透明度を下げると、なぞった場所を薄く透けさせるだけの弱い消しゴムになります。100でしっかり全部消えます。</p>
+</div>
+
+<!-- Blur settings sheet (separate from brush settings) -->
+<div class="sheet" id="blurSheet">
+  <div class="sheetHandle"></div>
+  <div class="sheetTitle">💫 ぼかし設定</div>
+  <div class="row"><label>ブラシの太さ</label><input type="range" id="blurSizeSlider" min="10" max="260" value="90"><span class="val" id="blurSizeVal">90</span></div>
+  <div class="previewWrap">
+    <div id="blurSizePreview" style="border-radius:50%;background:rgba(127,224,255,.35);border:2px solid var(--crystal);"></div>
+  </div>
+  <div class="row"><label>ぼかしの強さ</label><input type="range" id="blurStrengthSlider" min="1" max="100" value="20"><span class="val" id="blurStrengthVal">20</span></div>
+  <p style="font-size:11.5px;color:var(--text-dim);line-height:1.7;margin:0 0 8px;">なぞった場所がふんわりぼやけます。重ねてなぞるほど、より強くぼけます。<b style="color:var(--gold);">今選んでいるレイヤーだけ</b>に効くので、元画像をぼかしたくない時は加筆レイヤーを、加筆だけぼかしたい時は元画像を選ばないようにしてね。</p>
+  <p style="font-size:11.5px;color:var(--crystal);line-height:1.6;margin:0;">🎯 今のぼかし対象：<span id="blurTargetLabel">-</span>（レイヤー一覧で切り替えられます）</p>
+</div>
+
+<!-- Smudge (指でなぞる) settings sheet -->
+<div class="sheet" id="smudgeSheet">
+  <div class="sheetHandle"></div>
+  <div class="sheetTitle">🫳 なぞる設定</div>
+  <div class="row"><label>指の太さ</label><input type="range" id="smudgeSizeSlider" min="10" max="260" value="70"><span class="val" id="smudgeSizeVal">70</span></div>
+  <div class="previewWrap">
+    <div id="smudgeSizePreview" style="border-radius:50%;background:rgba(127,224,255,.35);border:2px solid var(--crystal);"></div>
+  </div>
+  <div class="row"><label>なぞる強さ</label><input type="range" id="smudgeStrengthSlider" min="1" max="100" value="45"><span class="val" id="smudgeStrengthVal">45</span></div>
+  <p style="font-size:11.5px;color:var(--text-dim);line-height:1.7;margin:0 0 8px;">指でなぞったように、色そのものを引きずって伸ばします。PhotoshopやIllustratorの「指先ツール」と同じ動きです。<b style="color:var(--gold);">今選んでいるレイヤーだけ</b>に効きます。</p>
+  <p style="font-size:11.5px;color:var(--crystal);line-height:1.6;margin:0;">🎯 今の対象：<span id="smudgeTargetLabel">-</span>（レイヤー一覧で切り替えられます）</p>
+</div>
+
+<!-- Color sheet -->
+<div class="sheet" id="colorSheet">
+  <div class="sheetHandle"></div>
+  <div class="sheetTitle">🎨 カラーパレット</div>
+  <div class="swatchGrid" id="swatchGrid"></div>
+
+  <div class="previewLabel" style="margin:0 0 8px;text-align:left;">↓ ドラッグして自由に色を作れます</div>
+  <div class="customPickerWrap">
+    <canvas id="svCanvas" width="300" height="150"></canvas>
+    <div class="svCursor" id="svCursor"></div>
+  </div>
+  <div class="hueSliderWrap">
+    <input type="range" id="hueSlider" min="0" max="360" value="30">
+    <div class="hueThumb" id="hueThumb"></div>
+  </div>
+  <div class="numColorRow">
+    <span class="customPreviewSwatch" id="customPreviewSwatch" style="background:#2b2118"></span>
+    <div class="hexBox"><span>#</span><input type="text" id="hexInput" maxlength="6" value="2b2118" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
+  </div>
+  <div class="numColorRow" style="margin-bottom:4px;">
+    <div class="rgbBox"><span>R</span><input type="number" id="rInput" min="0" max="255" value="43"></div>
+    <div class="rgbBox"><span>G</span><input type="number" id="gInput" min="0" max="255" value="33"></div>
+    <div class="rgbBox"><span>B</span><input type="number" id="bInput" min="0" max="255" value="24"></div>
+  </div>
+</div>
+
+<!-- Text layer sheet -->
+<div class="sheet" id="textSheet">
+  <div class="sheetHandle"></div>
+  <div class="sheetTitle">🔤 文字を追加</div>
+  <textarea id="textContentInput" placeholder="ここに文字を入力" rows="2" style="width:100%;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--bg-panel2);color:var(--text);font-size:14px;font-family:inherit;resize:none;margin-bottom:12px;"></textarea>
+
+  <div class="previewLabel" style="margin:0 0 6px;text-align:left;">書体</div>
+  <div class="presetRow" id="textFontRow" style="margin-bottom:12px;">
+    <div class="presetChip sel" data-font="'M PLUS Rounded 1c', sans-serif" style="font-family:'M PLUS Rounded 1c';">まる</div>
+    <div class="presetChip" data-font="'Zen Maru Gothic', sans-serif" style="font-family:'Zen Maru Gothic';">丸ゴシック</div>
+    <div class="presetChip" data-font="'Playfair Display', serif" style="font-family:'Playfair Display';font-style:italic;">Playfair</div>
+    <div class="presetChip" data-font="'Cinzel', serif" style="font-family:'Cinzel';">CINZEL</div>
+    <div class="presetChip" data-font="'Poppins', sans-serif" style="font-family:'Poppins';font-weight:800;">Poppins</div>
+    <div class="presetChip" data-font="'Dancing Script', cursive" style="font-family:'Dancing Script';font-weight:700;">Dancing</div>
+    <div class="presetChip" data-font="'Caveat', cursive" style="font-family:'Caveat';font-weight:700;">Caveat</div>
+  </div>
+
+  <div class="row"><label>サイズ</label><input type="range" id="textSizeSlider" min="12" max="240" value="60"><span class="val" id="textSizeVal">60</span></div>
+
+  <div class="previewLabel" style="margin:0 0 6px;text-align:left;">色</div>
+  <div class="swatchGrid" id="textColorSwatchGrid" style="margin-bottom:6px;"></div>
+  <div class="numColorRow" style="margin-bottom:14px;">
+    <span class="customPreviewSwatch" id="textColorPreview" style="background:#ffffff"></span>
+    <div class="hexBox"><span>#</span><input type="text" id="textHexInput" maxlength="6" value="ffffff" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
+  </div>
+
+  <div style="display:flex;gap:8px;">
+    <button id="textDeleteBtn" style="display:none;flex:1;padding:11px;border-radius:14px;border:1px solid var(--line);background:none;color:var(--danger);font-weight:700;font-size:13px;">削除</button>
+    <button id="textApplyBtn" style="flex:2;padding:11px;border-radius:14px;border:none;background:linear-gradient(120deg, var(--crystal), #a3c9ff);color:#101431;font-weight:700;font-size:13px;">追加する</button>
+  </div>
+  <p style="font-size:10.5px;color:var(--text-dim);line-height:1.6;margin:10px 0 0;">追加した文字は画像レイヤーと同じように、指でドラッグして移動、ピンチで拡大縮小できます（「移動」ツールを選んだ状態で）。レイヤー一覧の「✏️」からいつでも内容や書体を編集できます。</p>
+</div>
+
+<!-- Adjustments sheet -->
+<div class="sheet" id="adjustSheet">
+  <div class="sheetHandle"></div>
+  <div class="sheetTitle">🎚️ 画像調整<button id="adjustCloseBtn" style="margin-left:auto;background:none;border:none;color:var(--text-dim);font-size:18px;line-height:1;padding:4px 6px;">✕</button></div>
+
+  <div class="presetRow" id="presetRow">
+    <div class="presetChip sel" data-preset="normal">ノーマル</div>
+    <div class="presetChip" data-preset="vivid">ビビッド</div>
+    <div class="presetChip" data-preset="soft">ふんわり</div>
+    <div class="presetChip" data-preset="cool">クール</div>
+    <div class="presetChip" data-preset="sepia">セピア</div>
+    <div class="presetChip" data-preset="mono">モノクロ</div>
+    <div class="presetChip" data-preset="retro">レトロ</div>
+  </div>
+
+  <div class="row"><label>明るさ</label><input type="range" id="brSlider" min="-60" max="60" value="0"><span class="val" id="brVal">0</span></div>
+  <div class="row"><label>コントラスト</label><input type="range" id="ctSlider" min="-60" max="60" value="0"><span class="val" id="ctVal">0</span></div>
+  <div class="row"><label>彩度</label><input type="range" id="stSlider" min="-100" max="100" value="0"><span class="val" id="stVal">0</span></div>
+  <div class="row"><label>色温度</label><input type="range" id="wmSlider" min="-30" max="30" value="0"><span class="val" id="wmVal">0</span></div>
+  <div class="row"><label>セピア</label><input type="range" id="spSlider" min="0" max="100" value="0"><span class="val" id="spVal">0</span></div>
+  <div class="row"><label>ビネット</label><input type="range" id="vgSlider" min="0" max="100" value="0"><span class="val" id="vgVal">0</span></div>
+
+  <div class="row"><label>黄ばみ除去</label><input type="range" id="deyellowSlider" min="0" max="100" value="0"><span class="val" id="deyellowVal">0</span></div>
+  <p style="font-size:11px;color:var(--text-dim);line-height:1.6;margin:-8px 0 14px;">肌や背景の黄ばみだけをやわらげます（色温度と違い、黄色っぽいピクセルだけを狙って抑えます）。スライダーを離すと適用されて0に戻ります。やりすぎたら「元に戻す」で取り消せます。</p>
+
+  <div class="row"><label>シャープ</label><input type="range" id="sharpenSlider" min="0" max="100" value="0"><span class="val" id="sharpenVal">0</span></div>
+  <p style="font-size:11px;color:var(--text-dim);line-height:1.6;margin:-8px 0 14px;">輪郭をくっきりさせて、ぼやけた写真を鮮明に見せます（解像度アップとは別に、今のサイズのまま画質だけシャープにします）。黄ばみ除去と同じく、離すと適用されて0に戻ります。</p>
+
+  <div style="border-top:1px solid var(--line); margin:2px 0 12px; padding-top:14px;">
+    <div style="font-size:12.5px;font-weight:700;color:var(--gold);margin-bottom:6px;">🔍 解像度アップ（編集中の画質を上げる）</div>
+    <p style="font-size:11px;color:var(--text-dim);line-height:1.6;margin:0 0 10px;">画像が粗い・小さいと感じたら、今編集中のキャンバスそのものの解像度を上げられます。描き込み済みの内容もそのまま引き継がれます。<b style="color:var(--danger);">この操作は元に戻せません。</b></p>
+    <div class="previewLabel" id="upscaleCurrentLabel" style="margin-bottom:8px;">現在：-</div>
+    <div class="presetRow" id="upscaleScaleRow" style="flex-wrap:wrap;overflow:visible;">
+      <div class="presetChip" data-scale="1.5">1.5倍</div>
+      <div class="presetChip sel" data-scale="2">2倍</div>
+      <div class="presetChip" data-scale="3">3倍</div>
+    </div>
+    <button id="doUpscaleBtn" style="width:100%;padding:10px;border-radius:14px;border:1.5px solid var(--gold);background:rgba(243,205,142,.08);color:var(--gold);font-weight:700;font-size:12.5px;font-family:'M PLUS Rounded 1c';">この倍率で解像度を上げる</button>
+  </div>
+
+  <div class="transformRow">
+    <button class="xbtn" id="rotateBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>回転</button>
+    <button class="xbtn" id="flipHBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="m16 7 4 5-4 5"/><path d="m8 7-4 5 4 5"/></svg>左右反転</button>
+    <button class="xbtn" id="flipVBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h18"/><path d="m7 16 5 4 5-4"/><path d="m7 8 5-4 5 4"/></svg>上下反転</button>
+    <button class="xbtn warn" id="resetAdjustBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="m19 6-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>リセット</button>
+  </div>
+</div>
+
+<!-- New collage canvas size sheet -->
+<div class="sheet" id="sizeSheet">
+  <div class="sheetHandle"></div>
+  <div class="sheetTitle">📐 キャンバスサイズ</div>
+  <div class="previewWrap" style="height:140px;">
+    <div id="sizePreviewBox" style="background:linear-gradient(135deg, rgba(127,224,255,.35), rgba(255,179,199,.25)); border:2px solid var(--crystal); border-radius:6px;"></div>
+  </div>
+  <div class="previewLabel" id="sizePreviewLabel">1080 × 1080 px</div>
+  <div class="presetRow" id="sizePresetRow" style="flex-wrap:wrap;overflow:visible;">
+    <div class="presetChip" data-w="1080" data-h="1080">正方形(1:1)</div>
+    <div class="presetChip" data-w="1920" data-h="1080">横長(16:9)</div>
+    <div class="presetChip" data-w="1080" data-h="1440">縦長(3:4)</div>
+    <div class="presetChip" data-w="1500" data-h="500">ヘッダー(3:1)</div>
+    <div class="presetChip" data-w="1080" data-h="1215">少し縦長(8:9)</div>
+  </div>
+  <div class="row"><label>幅</label><input type="range" id="cwSlider" min="200" max="3000" value="1080"><span class="val" id="cwVal">1080</span></div>
+  <div class="row"><label>高さ</label><input type="range" id="chSlider" min="200" max="3000" value="1080"><span class="val" id="chVal">1080</span></div>
+  <button id="createCanvasBtn" style="width:100%;padding:12px;border-radius:16px;border:none;background:linear-gradient(120deg, var(--crystal), #a3c9ff);color:#101431;font-weight:700;font-size:13px;font-family:'M PLUS Rounded 1c';">このサイズで作成</button>
+</div>
+
+<!-- Layers sheet -->
+<div class="sheet" id="layersSheet">
+  <div class="sheetHandle"></div>
+  <div class="sheetTitle">📚 レイヤー・コラージュ</div>
+
+  <p style="font-size:10.5px;color:var(--gold);font-weight:700;margin:0 0 6px;">① 写真を追加する</p>
+  <button id="addImageLayerBtn" style="width:100%;padding:10px;border-radius:14px;border:1.5px dashed var(--pink);background:none;color:var(--pink);font-size:12.5px;font-weight:700;">🖼️ 写真を追加してコラージュ</button>
+  <button id="addTextLayerBtn" style="width:100%;padding:10px;border-radius:14px;border:1.5px dashed var(--crystal);background:none;color:var(--crystal);font-size:12.5px;font-weight:700;margin-top:6px;">🔤 文字を追加</button>
+
+  <p style="font-size:10.5px;color:var(--gold);font-weight:700;margin:14px 0 6px;">② 並べ方を選ぶ（写真が2枚以上そろってから）</p>
+  <div class="presetRow" id="collageLayoutRow" style="margin-bottom:8px;">
+    <div class="presetChip" data-layout="h">⬛⬜ 左右分割</div>
+    <div class="presetChip" data-layout="v">⬛<br>⬜ 上下分割</div>
+    <div class="presetChip" data-layout="grid">⊞ グリッド</div>
+  </div>
+
+  <p style="font-size:10.5px;color:var(--gold);font-weight:700;margin:10px 0 6px;">③ 境目をなじませる（お好みで）</p>
+  <div class="row" style="margin-bottom:4px;">
+    <label>シームレス</label>
+    <div style="display:flex;gap:6px;flex:1;justify-content:flex-end;">
+      <button id="collageSeamOffBtn" class="presetChip sel" style="padding:6px 14px;">なし</button>
+      <button id="collageSeamOnBtn" class="presetChip" style="padding:6px 14px;">あり</button>
+    </div>
+  </div>
+  <p id="collageSeamHint" style="display:none;font-size:10.5px;color:var(--text-dim);line-height:1.6;margin:-2px 0 10px;">写真同士が接している境目で、少しだけ重なり合ってなじむようにします。レイアウトを組み直したり写真を追加・削除したときも、境目は毎回そのときの配置から計算し直すので古い情報が残りません。</p>
+  <div class="row" id="collageSeamAmountRow" style="display:none;margin-bottom:12px;">
+    <label>影響幅</label>
+    <input type="range" id="collageSeamAmountSlider" min="4" max="150" value="28">
+    <span class="val" id="collageSeamAmountVal">28</span>
+  </div>
+  <div class="row" style="margin-bottom:4px;">
+    <label>枠線</label>
+    <div style="display:flex;gap:6px;flex:1;justify-content:flex-end;">
+      <button id="collageGuideOffBtn" class="presetChip" style="padding:6px 14px;">なし</button>
+      <button id="collageGuideOnBtn" class="presetChip sel" style="padding:6px 14px;">あり</button>
+    </div>
+  </div>
+  <p style="font-size:10.5px;color:var(--text-dim);line-height:1.6;margin:-2px 0 14px;">各コマの境界を点線で表示します（仕上がりには含まれません）。</p>
+
+  <p style="font-size:10.5px;color:var(--gold);font-weight:700;margin:4px 0 6px;">レイヤー一覧（個別に調整・削除）</p>
+  <div id="layerList"></div>
+  <button id="addLayerBtn">＋ 新規レイヤーを追加</button>
+  <button id="flattenAllBtn">🧩 すべてのレイヤーを元画像に統合</button>
+  <p style="font-size:10.5px;color:var(--text-dim);line-height:1.6;margin:6px 0 0;">レイヤーの各「⬇」ボタンで1つ下のレイヤー（一番下は元画像）に結合できます。統合すると元には戻せないので注意してね。各レイヤーの不透明度スライダーの下にある「通常」のプルダウンから、乗算・スクリーン・オーバーレイ・ソフトライト・焼き込みなどのブレンドモードを選べます。</p>
+</div>
+
+<!-- Export / resolution sheet -->
+<div class="sheet" id="exportSheet">
+  <div class="sheetHandle"></div>
+  <div class="sheetTitle">💾 保存</div>
+  <p style="font-size:11.5px;color:var(--text-dim);line-height:1.7;margin:0 0 12px;">そのままのサイズで保存するか、解像度を上げてより高精細なPNGとして保存できます（拡大時は自動でくっきり補正されます）。</p>
+  <div class="presetRow" id="exportScaleRow" style="flex-wrap:wrap;overflow:visible;">
+    <div class="presetChip sel" data-scale="1">等倍</div>
+    <div class="presetChip" data-scale="1.5">1.5倍</div>
+    <div class="presetChip" data-scale="2">2倍（高精細）</div>
+    <div class="presetChip" data-scale="3">3倍（高精細）</div>
+  </div>
+  <div class="previewLabel" id="exportSizeLabel">-</div>
+  <button id="doExportBtn" style="width:100%;padding:12px;border-radius:16px;border:none;background:linear-gradient(120deg, var(--crystal), #a3c9ff);color:#101431;font-weight:700;font-size:13px;font-family:'M PLUS Rounded 1c';">この設定で保存する</button>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------------- DOM refs ----------------
+  const stageWrap = document.getElementById('stageWrap');
+  const world = document.getElementById('world');
+  const emptyState = document.getElementById('emptyState');
+  const cursorDot = document.getElementById('cursorDot');
+  const zoomBadge = document.getElementById('zoomBadge');
+  const fileInput = document.getElementById('fileInput');
+  const toast = document.getElementById('toast');
+  const backdrop = document.getElementById('backdrop');
+
+  function showToast(msg){
+    toast.textContent = msg; toast.classList.add('show');
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(()=>toast.classList.remove('show'), 1600);
+  }
+
+  // ---------------- App state ----------------
+  const state = {
+    tool:'pen',
+    color:'#2b2118',
+    size:10,
+    opacity:100,
+    brushType:'hard',
+    softness:0,
+    pressureEnabled:true,
+    stabilization:4,
+    taperEnabled:true,
+    taperIn:35,
+    taperOut:35,
+    eraserSize:24,
+    eraserOpacity:100,
+    glitterSize:3,
+    glitterDensity:55,
+    blurSize:90,
+    blurStrength:20,
+    smudgeSize:70,
+    smudgeStrength:45,
+    collageSeamless:false,
+    collageSeamAmount:28,
+    scale:1, tx:0, ty:0,
+    imgW:0, imgH:0,
+    activeLayerId:null,
+  };
+
+  const adjust = { brightness:0, contrast:0, saturate:0, warmth:0, sepia:0, vignette:0 };
+  const PRESETS = {
+    normal:{brightness:0,contrast:0,saturate:0,warmth:0,sepia:0,vignette:0},
+    vivid:{brightness:6,contrast:18,saturate:45,warmth:0,sepia:0,vignette:0},
+    soft:{brightness:14,contrast:-12,saturate:-15,warmth:6,sepia:8,vignette:0},
+    cool:{brightness:2,contrast:6,saturate:-8,warmth:-18,sepia:0,vignette:8},
+    sepia:{brightness:4,contrast:2,saturate:-30,warmth:8,sepia:55,vignette:12},
+    mono:{brightness:2,contrast:12,saturate:-100,warmth:0,sepia:0,vignette:10},
+    retro:{brightness:6,contrast:-8,saturate:-20,warmth:14,sepia:22,vignette:26},
+  };
+
+  const PALETTE = ['#1a1512','#2b2118','#4a2e22','#6b3f2a','#8a5a3c','#c98b63',
+                   '#f2d3b8','#ffe9d6','#ffffff','#ff6b8a','#ffb3c7','#ff2d55',
+                   '#7fe0ff','#3ea8d8','#274b8a','#7a5cff','#c9a4ff','#f3cd8e',
+                   '#5ac47a','#2e6b4a','#3a3f72'];
+
+  // Standard blend modes — these are both valid CSS mix-blend-mode values (used
+  // live on-screen, since each layer is its own stacked <canvas> element) and
+  // valid Canvas2D globalCompositeOperation values (used when a layer actually
+  // needs to be baked into another canvas, e.g. merging/flattening/exporting).
+  const BLEND_MODES = [
+    ['normal','通常'],
+    ['multiply','乗算'],
+    ['screen','スクリーン'],
+    ['overlay','オーバーレイ'],
+    ['darken','比較(暗)'],
+    ['lighten','比較(明)'],
+    ['color-dodge','覆い焼き'],
+    ['color-burn','焼き込み'],
+    ['hard-light','ハードライト'],
+    ['soft-light','ソフトライト'],
+    ['difference','差の絶対値'],
+    ['exclusion','除外'],
+    ['hue','色相'],
+    ['saturation','彩度'],
+    ['color','カラー'],
+    ['luminosity','輝度'],
+  ];
+
+  let photoCanvas = null, photoCtx = null;
+  let adjustCanvas = null, adjustCtx = null; // on-screen, non-destructive render of photoCanvas + current 画像調整 filter
+  let vignetteCanvas = null, vignetteCtx = null;
+  let layers = []; // {id, canvas, ctx, name, opacity, visible, type, sourceImg, imgTransform}
+  let layerSeq = 1;
+  const PHOTO_ID = 'PHOTO'; // pseudo layer id used for undo/redo of blur/de-yellow edits on the base photo
+  let photoVisible = true, photoOpacity = 1; // lets the base photo show up as its own toggleable row in the layer list
+
+  function allCanvases(){
+    return [photoCanvas, vignetteCanvas, ...layers.map(l=>l.canvas)].filter(Boolean);
+  }
+
+  // ---------------- Undo / Redo ----------------
+  const undoStack = [], redoStack = [];
+  const MAX_HISTORY = 24;
+  function pushHistory(layer, beforeImageData){
+    undoStack.push({type:'single', layerId:layer.id, data:beforeImageData});
+    if(undoStack.length>MAX_HISTORY) undoStack.shift();
+    redoStack.length = 0;
+    updateHistBtns();
+  }
+  // Blur (and de-yellow) can now touch the photo canvas *and* merge/erase pixels
+  // on several drawing layers in one go, so they need a single undo step that
+  // restores all of those targets together instead of one entry per canvas.
+  function pushGroupHistory(entries){
+    undoStack.push({type:'group', entries});
+    if(undoStack.length>MAX_HISTORY) undoStack.shift();
+    redoStack.length = 0;
+    updateHistBtns();
+  }
+  function updateHistBtns(){
+    document.getElementById('undoBtn').disabled = undoStack.length===0;
+    document.getElementById('redoBtn').disabled = redoStack.length===0;
+  }
+  function resolveUndoTarget(id){
+    if(id===PHOTO_ID) return photoCanvas ? {id:PHOTO_ID, canvas:photoCanvas, ctx:photoCtx, isPhoto:true} : null;
+    return layers.find(l=>l.id===id);
+  }
+  function undo(){
+    const h = undoStack.pop(); if(!h) return;
+    if(h.type==='group'){
+      const redoEntries = [];
+      h.entries.forEach(en=>{
+        const target = resolveUndoTarget(en.layerId); if(!target) return;
+        const current = target.ctx.getImageData(0,0,target.canvas.width,target.canvas.height);
+        redoEntries.push({layerId:en.layerId, data:current});
+        target.ctx.putImageData(en.data,0,0);
+        if(target.isPhoto) renderAdjustCanvas(); else refreshLayerThumb(target);
+      });
+      redoStack.push({type:'group', entries:redoEntries});
+    } else {
+      const target = resolveUndoTarget(h.layerId); if(!target) return;
+      const current = target.ctx.getImageData(0,0,target.canvas.width,target.canvas.height);
+      redoStack.push({type:'single', layerId:h.layerId, data:current});
+      target.ctx.putImageData(h.data,0,0);
+      if(target.isPhoto) renderAdjustCanvas(); else refreshLayerThumb(target);
+    }
+    if(sheets.layers.classList.contains('show')) renderLayerList();
+    updateHistBtns();
+  }
+  function redo(){
+    const h = redoStack.pop(); if(!h) return;
+    if(h.type==='group'){
+      const undoEntries = [];
+      h.entries.forEach(en=>{
+        const target = resolveUndoTarget(en.layerId); if(!target) return;
+        const current = target.ctx.getImageData(0,0,target.canvas.width,target.canvas.height);
+        undoEntries.push({layerId:en.layerId, data:current});
+        target.ctx.putImageData(en.data,0,0);
+        if(target.isPhoto) renderAdjustCanvas(); else refreshLayerThumb(target);
+      });
+      undoStack.push({type:'group', entries:undoEntries});
+    } else {
+      const target = resolveUndoTarget(h.layerId); if(!target) return;
+      const current = target.ctx.getImageData(0,0,target.canvas.width,target.canvas.height);
+      undoStack.push({type:'single', layerId:h.layerId, data:current});
+      target.ctx.putImageData(h.data,0,0);
+      if(target.isPhoto) renderAdjustCanvas(); else refreshLayerThumb(target);
+    }
+    if(sheets.layers.classList.contains('show')) renderLayerList();
+    updateHistBtns();
+  }
+  document.getElementById('undoBtn').addEventListener('click', undo);
+  document.getElementById('redoBtn').addEventListener('click', redo);
+  updateHistBtns();
+
+  // ---------------- Image import ----------------
+  function loadImageFile(file){
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => setupCanvasFromImage(img);
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+  document.getElementById('importBtn').addEventListener('click', ()=>fileInput.click());
+  document.getElementById('importBtnBig').addEventListener('click', ()=>fileInput.click());
+  fileInput.addEventListener('change', e => { if(e.target.files[0]) loadImageFile(e.target.files[0]); fileInput.value=''; });
+
+  // ---------------- New collage canvas (choose a size instead of using a photo's size) ----------------
+  document.getElementById('newCollageBtn').addEventListener('click', ()=>{ openSheet('size'); updateSizePreview(); });
+  const cwSlider = document.getElementById('cwSlider'), chSlider = document.getElementById('chSlider');
+  const cwVal = document.getElementById('cwVal'), chVal = document.getElementById('chVal');
+  // Shows the chosen width/height as a proportional box (with the number
+  // underneath) so it's obvious what shape/range the new canvas will be
+  // *before* committing — previously there was no visual feedback at all,
+  // just two number sliders.
+  function updateSizePreview(){
+    const w = Math.max(1, +cwSlider.value), h = Math.max(1, +chSlider.value);
+    const box = document.getElementById('sizePreviewBox');
+    const label = document.getElementById('sizePreviewLabel');
+    if(!box || !label) return;
+    const maxDim = 108, ratio = w/h;
+    let bw, bh;
+    if(ratio>=1){ bw = maxDim; bh = maxDim/ratio; } else { bh = maxDim; bw = maxDim*ratio; }
+    box.style.width = Math.max(6,bw)+'px';
+    box.style.height = Math.max(6,bh)+'px';
+    label.textContent = `${w} × ${h} px`;
+  }
+  cwSlider.addEventListener('input', ()=>{ cwVal.textContent = cwSlider.value; document.querySelectorAll('#sizePresetRow .presetChip').forEach(p=>p.classList.remove('sel')); updateSizePreview(); });
+  chSlider.addEventListener('input', ()=>{ chVal.textContent = chSlider.value; document.querySelectorAll('#sizePresetRow .presetChip').forEach(p=>p.classList.remove('sel')); updateSizePreview(); });
+  document.querySelectorAll('#sizePresetRow .presetChip').forEach(chip=>{
+    chip.addEventListener('click', ()=>{
+      document.querySelectorAll('#sizePresetRow .presetChip').forEach(p=>p.classList.remove('sel'));
+      chip.classList.add('sel');
+      cwSlider.value = chip.dataset.w;
+      chSlider.value = chip.dataset.h;
+      cwVal.textContent = cwSlider.value;
+      chVal.textContent = chSlider.value;
+      updateSizePreview();
+    });
+  });
+  document.getElementById('createCanvasBtn').addEventListener('click', ()=>{
+    setupBlankCanvas(+cwSlider.value, +chSlider.value);
+  });
+  updateSizePreview();
+
+  function setupCanvasFromImage(img){
+    const MAXDIM = 2200;
+    let w = img.naturalWidth, h = img.naturalHeight;
+    if(Math.max(w,h) > MAXDIM){
+      const r = MAXDIM/Math.max(w,h);
+      w = Math.round(w*r); h = Math.round(h*r);
+    }
+    state.imgW = w; state.imgH = h;
+
+    world.innerHTML = '';
+    layers = []; layerSeq = 1; undoStack.length=0; redoStack.length=0; updateHistBtns();
+
+    photoCanvas = document.createElement('canvas');
+    photoCanvas.width = w; photoCanvas.height = h;
+    photoCanvas.className = 'smooth';
+    photoCtx = photoCanvas.getContext('2d');
+    photoCtx.drawImage(img,0,0,w,h);
+    // The raw photo canvas is never shown directly and never gets a CSS filter —
+    // it's purely the pixel data store. What's actually on screen is adjustCanvas
+    // (below), a plain re-render of it with the current adjustments baked in via
+    // the Canvas2D `filter` API. This keeps 明るさ/コントラスト/etc. fully
+    // non-destructive (resetting always returns a byte-for-byte original image)
+    // and avoids a real iOS/Safari bug where a CSS `filter` on an element inside a
+    // scaled/transformed ancestor (#world uses transform:scale for zoom) can get
+    // stuck mid-adjustment and stop updating correctly.
+    photoCanvas.style.display = 'none';
+    world.appendChild(photoCanvas);
+
+    adjustCanvas = document.createElement('canvas');
+    adjustCanvas.width = w; adjustCanvas.height = h;
+    adjustCanvas.className = 'smooth';
+    adjustCtx = adjustCanvas.getContext('2d');
+    world.appendChild(adjustCanvas);
+    photoVisible = true; photoOpacity = 1;
+    adjustCanvas.style.display = 'block'; adjustCanvas.style.opacity = 1;
+
+    vignetteCanvas = document.createElement('canvas');
+    vignetteCanvas.width = w; vignetteCanvas.height = h;
+    vignetteCtx = vignetteCanvas.getContext('2d');
+    world.appendChild(vignetteCanvas);
+
+    Object.assign(adjust, PRESETS.normal);
+    syncAdjustUI();
+    applyAdjustments();
+
+    addLayer('加筆レイヤー1', true);
+    emptyState.classList.add('hidden');
+    fitToScreen();
+    renderLayerList();
+    showToast('読み込み完了！加筆しよう ✨');
+  }
+
+  // A blank (transparent) canvas of a chosen size, for building a collage from
+  // scratch instead of deriving the canvas size from the first imported photo.
+  function setupBlankCanvas(w, h){
+    state.imgW = Math.round(w); state.imgH = Math.round(h);
+
+    world.innerHTML = '';
+    layers = []; layerSeq = 1; undoStack.length=0; redoStack.length=0; updateHistBtns();
+
+    photoCanvas = document.createElement('canvas');
+    photoCanvas.width = state.imgW; photoCanvas.height = state.imgH;
+    photoCanvas.className = 'smooth';
+    photoCtx = photoCanvas.getContext('2d');
+    // A blank collage's base used to be left fully transparent — harmless on
+    // its own, but it meant a layer's ブレンドモード (乗算/オーバーレイ etc.) had
+    // nothing underneath to actually blend WITH across most of the canvas
+    // (blend modes need real content behind them; blending against
+    // transparency just shows the layer normally). A plain white base gives
+    // every blend mode something real to react to everywhere, like starting
+    // a new document in an image editor normally does.
+    photoCtx.fillStyle = '#ffffff';
+    photoCtx.fillRect(0,0,state.imgW,state.imgH);
+    photoCanvas.style.display = 'none';
+    world.appendChild(photoCanvas);
+
+    adjustCanvas = document.createElement('canvas');
+    adjustCanvas.width = state.imgW; adjustCanvas.height = state.imgH;
+    adjustCanvas.className = 'smooth';
+    adjustCtx = adjustCanvas.getContext('2d');
+    world.appendChild(adjustCanvas);
+    photoVisible = true; photoOpacity = 1;
+    adjustCanvas.style.display = 'block'; adjustCanvas.style.opacity = 1;
+
+    vignetteCanvas = document.createElement('canvas');
+    vignetteCanvas.width = state.imgW; vignetteCanvas.height = state.imgH;
+    vignetteCtx = vignetteCanvas.getContext('2d');
+    world.appendChild(vignetteCanvas);
+
+    Object.assign(adjust, PRESETS.normal);
+    syncAdjustUI();
+    applyAdjustments();
+
+    addLayer('加筆レイヤー1', true);
+    emptyState.classList.add('hidden');
+    fitToScreen();
+    renderLayerList();
+    closeSheets();
+    showToast('キャンバスを作成しました。写真を追加してコラージュしよう ✨');
+    openSheet('layers');
+  }
+
+  function addLayer(name, makeActive){
+    const c = document.createElement('canvas');
+    c.width = state.imgW; c.height = state.imgH;
+    const ctx = c.getContext('2d');
+    world.appendChild(c);
+    const layer = {id:'L'+(layerSeq++), canvas:c, ctx, name: name || ('レイヤー'+layerSeq), opacity:1, visible:true, blendMode:'normal'};
+    layers.push(layer);
+    applyLayerStyle(layer);
+    if(makeActive) state.activeLayerId = layer.id;
+    return layer;
+  }
+  // Blend modes: each layer canvas is its own stacked DOM element, so CSS
+  // `mix-blend-mode` is what actually blends it with the layers below it on
+  // screen — the same standard mode names (multiply/screen/overlay/darken/
+  // lighten/color-dodge/color-burn/hard-light/soft-light/difference/exclusion/
+  // hue/saturation/color/luminosity) are also valid Canvas2D
+  // globalCompositeOperation values, so the exact same string is reused when a
+  // layer actually needs to be baked into another canvas (merge/flatten/export/
+  // eyedropper) — see mergeLayerDown / mergeLayerIntoPhoto / flattenAllLayers /
+  // composeFinalCanvas / buildSampleCanvas.
+  // mix-blend-mode itself has no "how strong" knob — a mode is either fully
+  // on or fully off. To get an adjustable 効果の量, this keeps the REAL layer
+  // canvas rendering normally (so its own content/position never changes)
+  // and, only when a blend mode is active at less than 100%, adds a synced
+  // duplicate "ghost" canvas directly on top of it with the blend mode
+  // applied and its opacity scaled by the amount — at 0% only the normal
+  // layer shows (no blend effect), at 100% the ghost is fully opaque
+  // (indistinguishable from a plain full-strength blend), and values between
+  // cross-fade the effect in gradually.
+  function syncBlendGhost(layer){
+    const hasBlend = layer.blendMode && layer.blendMode!=='normal';
+    const amt = Math.max(0, Math.min(100, layer.blendAmount==null?100:layer.blendAmount))/100;
+    if(!hasBlend || amt>=0.999){
+      layer.canvas.style.mixBlendMode = hasBlend ? layer.blendMode : 'normal';
+      layer.canvas.style.opacity = layer.opacity;
+      if(layer.ghostCanvas) layer.ghostCanvas.style.display = 'none';
+      return;
+    }
+    layer.canvas.style.mixBlendMode = 'normal';
+    layer.canvas.style.opacity = layer.opacity;
+    if(!layer.ghostCanvas){
+      const g = document.createElement('canvas');
+      g.className = layer.canvas.className;
+      g.style.pointerEvents = 'none';
+      layer.canvas.after(g);
+      layer.ghostCanvas = g;
+    }
+    const g = layer.ghostCanvas;
+    if(g.width!==layer.canvas.width) g.width = layer.canvas.width;
+    if(g.height!==layer.canvas.height) g.height = layer.canvas.height;
+    g.style.display = layer.visible ? 'block' : 'none';
+    g.style.mixBlendMode = layer.blendMode;
+    g.style.opacity = layer.opacity*amt;
+    const gctx = g.getContext('2d');
+    gctx.clearRect(0,0,g.width,g.height);
+    gctx.drawImage(layer.canvas,0,0);
+  }
+  function applyLayerStyle(layer){
+    layer.canvas.style.display = layer.visible ? 'block' : 'none';
+    syncBlendGhost(layer);
+  }
+
+  // ---------------- Collage: add another photo as a movable/resizable layer ----------------
+  function addImageLayer(img){
+    if(!state.imgW){ showToast('先に写真を読み込んでね'); return; }
+    const c = document.createElement('canvas');
+    c.width = state.imgW; c.height = state.imgH;
+    const ctx = c.getContext('2d');
+    world.appendChild(c);
+    const fitScale = Math.min((state.imgW*0.65)/img.naturalWidth, (state.imgH*0.65)/img.naturalHeight);
+    const layer = {
+      id:'L'+(layerSeq++), canvas:c, ctx, name:'コラージュ写真'+layerSeq, opacity:1, visible:true, blendMode:'normal',
+      type:'image', sourceImg:img, seamless:{amount:0, top:true, bottom:true, left:true, right:true},
+      imgTransform:{ x: state.imgW/2, y: state.imgH/2, scale: fitScale, slot:null },
+    };
+    layers.push(layer);
+    applyLayerStyle(layer);
+    state.activeLayerId = layer.id;
+    redrawImageLayer(layer);
+
+    state.tool = 'imgmove';
+    document.querySelectorAll('.tool[data-tool]').forEach(b=>b.classList.remove('active'));
+    const btn = document.querySelector('.tool[data-tool="imgmove"]');
+    if(btn) btn.classList.add('active');
+    updateBrushBtnLabel();
+
+    renderLayerList();
+    showToast('ドラッグで移動、ピンチで拡大縮小できます');
+  }
+  // ---------------- Text layers ----------------
+  // Deliberately reuses the exact same imgTransform{x,y,scale} shape that
+  // image/collage layers use — that's what lets a text layer be dragged and
+  // pinch-scaled with the SAME 移動 tool and pointer handling, instead of
+  // needing a whole separate move/scale system just for text.
+  function addTextLayer(text, style){
+    if(!state.imgW){ showToast('先に写真を読み込んでね'); return null; }
+    const c = document.createElement('canvas');
+    c.width = state.imgW; c.height = state.imgH;
+    const ctx = c.getContext('2d');
+    world.appendChild(c);
+    const layer = {
+      id:'L'+(layerSeq++), canvas:c, ctx, name:'テキスト'+layerSeq, opacity:1, visible:true, blendMode:'normal',
+      type:'text', textContent:text,
+      textStyle: { font: style.font, size: style.size, color: style.color },
+      imgTransform: { x: state.imgW/2, y: state.imgH/2, scale: 1 },
+    };
+    layers.push(layer);
+    applyLayerStyle(layer);
+    state.activeLayerId = layer.id;
+    redrawTextLayer(layer);
+    renderLayerList();
+    return layer;
+  }
+  function redrawTextLayer(layer){
+    const ctx = layer.ctx, t = layer.imgTransform, ts = layer.textStyle;
+    ctx.clearRect(0,0,layer.canvas.width, layer.canvas.height);
+    const lines = (layer.textContent||'').split('\n');
+    const size = Math.max(4, ts.size*t.scale);
+    ctx.save();
+    ctx.font = `${size}px ${ts.font}`;
+    ctx.fillStyle = ts.color;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const lineHeight = size*1.25;
+    const totalH = lineHeight*lines.length;
+    lines.forEach((line,i)=>{
+      const ly = t.y - totalH/2 + lineHeight*(i+0.5);
+      ctx.fillText(line, t.x, ly);
+    });
+    ctx.restore();
+    refreshLayerThumb(layer);
+  }
+
+  function redrawImageLayer(layer){
+    const img = layer.sourceImg, t = layer.imgTransform;
+    const w = img.naturalWidth*t.scale, h = img.naturalHeight*t.scale;
+    layer.ctx.clearRect(0,0,layer.canvas.width,layer.canvas.height);
+    layer.ctx.save();
+    if(t.slot){
+      layer.ctx.beginPath();
+      layer.ctx.rect(t.slot.x, t.slot.y, t.slot.w, t.slot.h);
+      layer.ctx.clip();
+    }
+    layer.ctx.drawImage(img, t.x-w/2, t.y-h/2, w, h);
+    layer.ctx.restore();
+    if(layer.seamless && layer.seamless.amount>0){
+      const b = t.slot || {x:t.x-w/2, y:t.y-h/2, w, h};
+      applySeamlessFeather(layer, b.x, b.y, b.w, b.h, layer.seamless.amount, layer.seamless);
+    }
+    refreshLayerThumb(layer);
+  }
+
+  // Feathers the edges of a collage photo so it blends into its NEIGHBOUR —
+  // not just fades to nothing. That distinction is the whole point: fading
+  // your own edge to transparent only looks like a blend if there's actually
+  // another photo's pixels underneath to reveal. Previously, adjacent slots
+  // exactly tiled the canvas with zero overlap, so fading either photo's
+  // edge just revealed empty transparency — シームレスにしても何ともなじまなかっ
+  // たのはこれが原因。The fix: arrangeCollage now expands each photo's actual
+  // draw rect past its nominal slot boundary by the feather amount wherever
+  // it touches a neighbour, so the two photos genuinely overlap in a shared
+  // band around the seam. This then fades EACH photo linearly across that
+  // exact shared band — one photo 1→0, the other 0→1 — so their alphas sum
+  // to ~1 at every point and the transition reads as one smooth photo
+  // dissolving into the other, not two separate fades to nothing.
+  function applySeamlessFeather(layer, rx, ry, rw, rh, feather, edges){
+    edges = edges || {top:true, bottom:true, left:true, right:true};
+    const cw = layer.canvas.width, ch = layer.canvas.height;
+    const f = Math.max(0, Math.min(feather, rw/2, rh/2));
+    if(f<=0) return;
+
+    const mask = document.createElement('canvas');
+    mask.width = cw; mask.height = ch;
+    const mctx = mask.getContext('2d');
+    mctx.fillStyle = '#000';
+    mctx.fillRect(rx, ry, rw, rh);
+
+    // Each call clips the mask down further by ANDing in a gradient spanning
+    // the last 2f px before that edge — 1 (opaque) at 2f in from the edge,
+    // fading to 0 exactly at the edge itself. Because the neighbouring photo
+    // was expanded by the same f, its matching gradient covers the identical
+    // band in the opposite direction, giving the symmetric crossfade.
+    const fadeEdge = (x0,y0,x1,y1,reverse)=>{
+      mctx.globalCompositeOperation = 'destination-in';
+      const g = mctx.createLinearGradient(x0,y0,x1,y1);
+      if(reverse){ g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(0,0,0,1)'); }
+      else       { g.addColorStop(0,'rgba(0,0,0,1)'); g.addColorStop(1,'rgba(0,0,0,0)'); }
+      mctx.fillStyle = g;
+      mctx.fillRect(rx, ry, rw, rh);
+      mctx.globalCompositeOperation = 'source-over';
+    };
+    if(edges.right)  fadeEdge(rx+rw-2*f, 0, rx+rw, 0, false);
+    if(edges.left)   fadeEdge(rx, 0, rx+2*f, 0, true);
+    if(edges.bottom) fadeEdge(0, ry+rh-2*f, 0, ry+rh, false);
+    if(edges.top)    fadeEdge(0, ry, 0, ry+2*f, true);
+
+    layer.ctx.save();
+    layer.ctx.globalCompositeOperation = 'destination-in';
+    layer.ctx.drawImage(mask,0,0);
+    layer.ctx.restore();
+  }
+
+  // ---------------- Crop (切り抜き) for image/collage layers ----------------
+  // A crop is just a manually-drawn slot: applying one sets imgTransform.slot
+  // to the rect the person drew, which is the exact same field arrangeCollage
+  // already uses to clip a photo to its cell. That's what makes "対象の辺"
+  // actually mean something for a photo that was placed by hand (読込) rather
+  // than through a layout — without a slot, redrawImageLayer falls back to
+  // the photo's own rendered bounding box, which can sit way outside the
+  // canvas once zoomed in, so there's no meaningful boundary to feather from.
+  const cropOverlay = document.getElementById('cropOverlay');
+  const cropDim = document.getElementById('cropDim');
+  const cropRectEl = document.getElementById('cropRect');
+  const cropBar = document.getElementById('cropBar');
+  let cropState = null; // { layer, rect:{x,y,w,h} } in canvas coordinates
+
+  function cropRectFromScreen(){
+    // Current crop rect, clamped to the canvas, in canvas coordinates.
+    const r = cropState.rect;
+    const x0 = Math.max(0, Math.min(r.x, r.x+r.w));
+    const y0 = Math.max(0, Math.min(r.y, r.y+r.h));
+    const x1 = Math.min(state.imgW, Math.max(r.x, r.x+r.w));
+    const y1 = Math.min(state.imgH, Math.max(r.y, r.y+r.h));
+    return { x:x0, y:y0, w:Math.max(4,x1-x0), h:Math.max(4,y1-y0) };
+  }
+  function renderCropRect(){
+    const r = cropRectFromScreen();
+    const p0 = canvasToStage(r.x, r.y);
+    const p1 = canvasToStage(r.x+r.w, r.y+r.h);
+    cropRectEl.style.left = p0.x+'px';
+    cropRectEl.style.top = p0.y+'px';
+    cropRectEl.style.width = (p1.x-p0.x)+'px';
+    cropRectEl.style.height = (p1.y-p0.y)+'px';
+  }
+  function enterCropMode(layer){
+    if(layer.type!=='image') return;
+    const t = layer.imgTransform;
+    const w = layer.sourceImg.naturalWidth*t.scale, h = layer.sourceImg.naturalHeight*t.scale;
+    const initial = t.slot ? {...t.slot} : {
+      x: Math.max(0, t.x-w/2), y: Math.max(0, t.y-h/2),
+      w: Math.min(state.imgW, w), h: Math.min(state.imgH, h),
+    };
+    cropState = { layer, rect: initial };
+    cropOverlay.style.display = 'block';
+    cropBar.style.display = 'flex';
+    renderCropRect();
+    closeSheets();
+  }
+  function exitCropMode(){
+    cropOverlay.style.display = 'none';
+    cropBar.style.display = 'none';
+    cropState = null;
+  }
+  document.getElementById('cropCancelBtn').addEventListener('click', exitCropMode);
+  document.getElementById('cropApplyBtn').addEventListener('click', ()=>{
+    if(!cropState) return;
+    const layer = cropState.layer;
+    const rect = cropRectFromScreen();
+    const t = layer.imgTransform;
+    const img = layer.sourceImg;
+    const w = img.naturalWidth*t.scale, h = img.naturalHeight*t.scale;
+
+    // A real crop: rasterize exactly what's currently showing inside the
+    // rect (respecting the photo's current pan/zoom) and make THAT the
+    // layer's actual photo from now on — not just a movable window onto the
+    // original. Everything outside the rect is genuinely discarded: once
+    // this is applied, dragging/pinching the layer moves the CROPPED image,
+    // and nothing that was outside the rect can ever reappear.
+    const temp = document.createElement('canvas');
+    temp.width = Math.max(1, Math.round(rect.w));
+    temp.height = Math.max(1, Math.round(rect.h));
+    temp.getContext('2d').drawImage(img, (t.x-w/2)-rect.x, (t.y-h/2)-rect.y, w, h);
+
+    const cropped = new Image();
+    cropped.onload = () => {
+      layer.sourceImg = cropped;
+      // The cropped result already exactly fills what will be its new
+      // slot, so scale starts at 1 and there's no separate clip needed —
+      // the image's own bounds ARE the crop now.
+      layer.imgTransform = { x: rect.x+rect.w/2, y: rect.y+rect.h/2, scale: 1, slot: null };
+      // A freshly, manually cropped photo isn't part of any layout, so there's
+      // no defined "which side touches another photo" — leave シームレス off
+      // on all sides by default; the buttons in the layer panel can still turn
+      // any of them on by hand if this crop is meant to blend into something.
+      layer.seamless = { amount: (layer.seamless && layer.seamless.amount) || 0, top:false, bottom:false, left:false, right:false };
+      redrawImageLayer(layer);
+      refreshLayerThumb(layer);
+      renderLayerList();
+      showToast('切り抜きました');
+    };
+    cropped.src = temp.toDataURL();
+    exitCropMode();
+  });
+  // Dragging inside the rect (not on a handle) moves the whole crop area.
+  let cropDrag = null; // {mode:'move'|corner, startRect, startX, startY}
+  cropRectEl.addEventListener('pointerdown', (e)=>{
+    if(e.target.classList.contains('cropHandle')) return; // handled separately below
+    e.preventDefault();
+    cropRectEl.setPointerCapture(e.pointerId);
+    cropDrag = { mode:'move', startRect:{...cropState.rect}, startX:e.clientX, startY:e.clientY };
+  });
+  cropRectEl.querySelectorAll('.cropHandle').forEach(h=>{
+    h.addEventListener('pointerdown', (e)=>{
+      e.preventDefault(); e.stopPropagation();
+      cropRectEl.setPointerCapture(e.pointerId);
+      cropDrag = { mode:h.dataset.corner, startRect:{...cropState.rect}, startX:e.clientX, startY:e.clientY };
+    });
+  });
+  function onCropPointerMove(e){
+    if(!cropDrag || !cropState) return;
+    const dx = (e.clientX - cropDrag.startX)/state.scale;
+    const dy = (e.clientY - cropDrag.startY)/state.scale;
+    const s = cropDrag.startRect;
+    if(cropDrag.mode==='move'){
+      cropState.rect = { x: s.x+dx, y: s.y+dy, w: s.w, h: s.h };
+    } else {
+      // Resize from whichever corner is being dragged, keeping the OPPOSITE
+      // corner fixed in place.
+      let x0=s.x, y0=s.y, x1=s.x+s.w, y1=s.y+s.h;
+      if(cropDrag.mode==='tl'){ x0=s.x+dx; y0=s.y+dy; }
+      else if(cropDrag.mode==='tr'){ x1=s.x+s.w+dx; y0=s.y+dy; }
+      else if(cropDrag.mode==='bl'){ x0=s.x+dx; y1=s.y+s.h+dy; }
+      else if(cropDrag.mode==='br'){ x1=s.x+s.w+dx; y1=s.y+s.h+dy; }
+      cropState.rect = { x:x0, y:y0, w:x1-x0, h:y1-y0 };
+    }
+    renderCropRect();
+  }
+  function onCropPointerUp(e){ cropDrag = null; }
+  cropRectEl.addEventListener('pointermove', onCropPointerMove);
+  cropRectEl.addEventListener('pointerup', onCropPointerUp);
+  cropRectEl.addEventListener('pointercancel', onCropPointerUp);
+
+  // Quick layout: evenly splits every image-type layer (in layer order) into slots
+  // across the canvas — left/right, top/bottom, or a grid — matching what "並べ方"
+  // does in the reference collage tool. Each photo is cover-fit into its slot and
+  // stays draggable/pinchable within it afterwards.
+  // A thin dashed outline per slot, drawn on its own always-on-top canvas, so
+  // it's clear at a glance where each photo's cell actually is — before this,
+  // once a layout was picked there was no visual reference for "how big is
+  // this cell" beyond eyeballing where the photos themselves ended up.
+  let collageGuideCanvas = null;
+  function ensureGuideCanvas(){
+    if(!collageGuideCanvas){
+      collageGuideCanvas = document.createElement('canvas');
+      collageGuideCanvas.className = 'smooth';
+      collageGuideCanvas.style.pointerEvents = 'none';
+    }
+    collageGuideCanvas.width = state.imgW; collageGuideCanvas.height = state.imgH;
+    world.appendChild(collageGuideCanvas); // (re)append last so it stays on top of every layer
+    return collageGuideCanvas;
+  }
+  function drawCollageGuide(slots){
+    const c = ensureGuideCanvas();
+    const ctx = c.getContext('2d');
+    ctx.clearRect(0,0,c.width,c.height);
+    const lw = Math.max(1.5, Math.min(c.width,c.height)*0.0035);
+    ctx.save();
+    ctx.strokeStyle = 'rgba(243,205,142,.9)';
+    ctx.lineWidth = lw;
+    ctx.setLineDash([Math.max(6,c.width*0.01), Math.max(4,c.width*0.006)]);
+    slots.forEach(s=>{ ctx.strokeRect(s.x+lw/2, s.y+lw/2, s.w-lw, s.h-lw); });
+    ctx.restore();
+  }
+  function clearCollageGuide(){
+    if(collageGuideCanvas){ collageGuideCanvas.getContext('2d').clearRect(0,0,collageGuideCanvas.width,collageGuideCanvas.height); }
+  }
+
+  // Slot geometry and シームレス amount are now kept as two separate, always-
+  // freshly-derived things rather than baked into each layer at arrangement
+  // time — that's what let them go stale (and what the reference app avoids
+  // by keeping the whole layout in one place). state.collageMode + the
+  // current count of image layers is the one source of truth for where the
+  // boundaries are; anything that touches the layer count (add/delete a
+  // photo) or the シームレス toggle just recomputes from that, instead of
+  // trusting whatever was written into a layer the last time things changed.
+  let collageSlots = null;
+  function computeCollageSlots(mode, n, W, H){
+    const slots = [];
+    if(mode==='h'){
+      const cw = W/n;
+      for(let i=0;i<n;i++) slots.push({x:i*cw, y:0, w:cw, h:H});
+    } else if(mode==='v'){
+      const rh = H/n;
+      for(let i=0;i<n;i++) slots.push({x:0, y:i*rh, w:W, h:rh});
+    } else {
+      const cols = Math.ceil(Math.sqrt(n));
+      const rows = Math.ceil(n/cols);
+      const cw = W/cols, ch = H/rows;
+      for(let i=0;i<n;i++){
+        const col = i%cols, row = Math.floor(i/cols);
+        slots.push({x:col*cw, y:row*ch, w:cw, h:ch});
+      }
+    }
+    return slots;
+  }
+  // h/v/grid layouts tile the canvas edge-to-edge with no gaps, so any slot
+  // edge that ISN'T on the outer canvas boundary is, by definition, touching
+  // another photo's slot — that's the actual "境目" (boundary), computed
+  // fresh from the CURRENT slots every time this runs, never cached.
+  function applyCollageSeamlessEdges(imgLayers, slots, W, H){
+    const EPS = 0.5;
+    imgLayers.forEach((layer,i)=>{
+      const s = slots[i]; if(!s) return;
+      layer.seamless = {
+        amount: state.collageSeamless ? state.collageSeamAmount : 0,
+        top:    s.y > EPS,
+        bottom: (s.y+s.h) < H-EPS,
+        left:   s.x > EPS,
+        right:  (s.x+s.w) < W-EPS,
+      };
+      redrawImageLayer(layer);
+    });
+  }
+  // The nominal (non-overlapping) slot is only used to know where each
+  // photo's CENTER should sit and which of its edges border a neighbour.
+  // What actually gets drawn/clipped/fed to applySeamlessFeather is this
+  // expanded rect — the nominal slot pushed out by `overlap` on whichever
+  // edges touch another photo — so there's real, shared pixel content in the
+  // band around every seam for the two photos to cross-fade into. Without
+  // this, フェード先に何もないので馴染みようがない — see applySeamlessFeather.
+  function expandSlotForOverlap(s, W, H, overlap){
+    const EPS = 0.5;
+    const adjTop = s.y > EPS, adjBottom = (s.y+s.h) < H-EPS;
+    const adjLeft = s.x > EPS, adjRight = (s.x+s.w) < W-EPS;
+    return {
+      x: s.x - (adjLeft ? overlap : 0),
+      y: s.y - (adjTop ? overlap : 0),
+      w: s.w + (adjLeft ? overlap : 0) + (adjRight ? overlap : 0),
+      h: s.h + (adjTop ? overlap : 0) + (adjBottom ? overlap : 0),
+    };
+  }
+  function arrangeCollage(mode){
+    const imgLayers = layers.filter(l=>l.type==='image');
+    if(imgLayers.length<2){ showToast('写真レイヤーが2枚以上必要です'); return; }
+    const W = state.imgW, H = state.imgH, n = imgLayers.length;
+    const slots = computeCollageSlots(mode, n, W, H);
+    state.collageMode = mode;
+    collageSlots = slots;
+    const overlap = state.collageSeamless ? state.collageSeamAmount : 0;
+    imgLayers.forEach((layer,i)=>{
+      const s = slots[i]; if(!s) return;
+      const drawRect = overlap>0 ? expandSlotForOverlap(s, W, H, overlap) : s;
+      const img = layer.sourceImg;
+      const coverScale = Math.max(drawRect.w/img.naturalWidth, drawRect.h/img.naturalHeight);
+      // Centered on the EXPANDED rect (not the nominal slot) so the
+      // cover-fit image actually reaches every edge of it with no gaps.
+      layer.imgTransform = { x: drawRect.x+drawRect.w/2, y: drawRect.y+drawRect.h/2, scale: coverScale, slot: drawRect };
+    });
+    applyCollageSeamlessEdges(imgLayers, slots, W, H);
+    drawCollageGuide(slots);
+    renderLayerList();
+    showToast('レイアウトを適用しました。写真は各コマ内でドラッグ・ピンチできます');
+  }
+  // Called whenever the set of image layers changes (added/deleted) while a
+  // layout is active — re-derives everything (positions AND シームレス) from
+  // scratch for however many photos exist now, so the boundaries never go
+  // stale the way they used to when a photo count changed after arranging.
+  function reapplyCollageIfActive(){
+    if(!state.collageMode) return;
+    const imgLayers = layers.filter(l=>l.type==='image');
+    if(imgLayers.length<2){ state.collageMode = null; collageSlots = null; clearCollageGuide(); return; }
+    arrangeCollage(state.collageMode);
+  }
+  // Returns whatever is currently selected as the "draw here" target — either a
+  // normal layer object, or a synthetic wrapper around the base photo canvas so
+  // the original image can be selected and drawn/blurred/erased on directly, just
+  // like any other layer (previously the photo could only ever be an implicit,
+  // unselectable target of the blur tool).
+  function getActiveLayer(){
+    if(state.activeLayerId === PHOTO_ID){
+      if(!photoCanvas) return null;
+      return {id:PHOTO_ID, canvas:photoCanvas, ctx:photoCtx, opacity:1, visible:true, isPhoto:true, name:'元画像'};
+    }
+    return layers.find(l=>l.id===state.activeLayerId) || layers[layers.length-1] || null;
+  }
+
+  // ---------------- Zoom / Pan (view transform) ----------------
+  function applyTransform(){
+    world.style.transform = `translate(${state.tx}px, ${state.ty}px) scale(${state.scale})`;
+    zoomBadge.textContent = Math.round(state.scale*100)+'%';
+  }
+  function fitToScreen(){
+    const rect = stageWrap.getBoundingClientRect();
+    const pad = 24;
+    const s = Math.min((rect.width-pad*2)/state.imgW, (rect.height-pad*2)/state.imgH, 3);
+    state.scale = s;
+    state.tx = (rect.width - state.imgW*s)/2;
+    state.ty = (rect.height - state.imgH*s)/2;
+    applyTransform();
+  }
+  window.addEventListener('resize', ()=>{ if(state.imgW) fitToScreen(); });
+
+  function screenToCanvas(x,y){
+    const rect = stageWrap.getBoundingClientRect();
+    return {
+      x: (x - rect.left - state.tx) / state.scale,
+      y: (y - rect.top - state.ty) / state.scale
+    };
+  }
+  function canvasToScreen(cx,cy){
+    const rect = stageWrap.getBoundingClientRect();
+    return { x: rect.left + state.tx + cx*state.scale, y: rect.top + state.ty + cy*state.scale };
+  }
+  // Same, but relative to stageWrap's own box — for positioning plain
+  // position:absolute children of stageWrap (like the crop handles), which
+  // don't need the viewport offset canvasToScreen adds.
+  function canvasToStage(cx,cy){
+    return { x: state.tx + cx*state.scale, y: state.ty + cy*state.scale };
+  }
+
+  // ---------------- Image adjustments (filter / vignette / transform) ----------------
+  function buildFilterString(){
+    const b = 1 + adjust.brightness/100;
+    const c = 1 + adjust.contrast/100;
+    const s = 1 + adjust.saturate/100;
+    return `brightness(${b}) contrast(${c}) saturate(${Math.max(0,s)}) hue-rotate(${adjust.warmth}deg) sepia(${adjust.sepia/100})`;
+  }
+  function drawVignette(){
+    if(!vignetteCtx) return;
+    vignetteCtx.clearRect(0,0,vignetteCanvas.width,vignetteCanvas.height);
+    if(adjust.vignette<=0) return;
+    const w = vignetteCanvas.width, h = vignetteCanvas.height;
+    const cx=w/2, cy=h/2, outer=Math.hypot(cx,cy);
+    const g = vignetteCtx.createRadialGradient(cx,cy, outer*0.35, cx,cy, outer);
+    const a = (adjust.vignette/100)*0.85;
+    g.addColorStop(0,'rgba(0,0,0,0)');
+    g.addColorStop(1,`rgba(0,0,0,${a})`);
+    vignetteCtx.fillStyle = g;
+    vignetteCtx.fillRect(0,0,w,h);
+  }
+  // Renders the adjusted look into adjustCanvas from the untouched photoCanvas
+  // pixel data, using the Canvas2D `filter` API on a throwaway drawImage call —
+  // never a CSS style filter on the visible element. photoCanvas itself is
+  // therefore never touched by 画像調整, so it's always possible to get back to
+  // the exact original by resetting the sliders, and edit tools (pen/ぼかし/
+  // 消しゴム) that target the base photo keep working on true, unfiltered pixels.
+  let adjustRAF = null;
+  // Even "neutral" values like brightness(1) contrast(1) saturate(1) still push
+  // the draw through the browser's filter-effects pipeline, which can shift
+  // colors by a hair (a faint wash/desaturation) versus a plain drawImage — this
+  // is what made the photo look slightly filtered the instant the 画像調整 sheet
+  // was opened, even before touching any slider. Skipping ctx.filter entirely
+  // whenever every value is at its default guarantees a byte-for-byte identical,
+  // un-filtered image until the person actually changes something.
+  function isAdjustNeutral(){
+    return adjust.brightness===0 && adjust.contrast===0 && adjust.saturate===0 && adjust.warmth===0 && adjust.sepia===0;
+  }
+  // Renders photoCanvas's raw pixels into adjustCanvas — no filter baked in
+  // here anymore (see applyAdjustments below for why). This still exists
+  // because photoCanvas itself stays hidden/off-screen so pen/ぼかし/消しゴム
+  // edits always work on true, unmodified pixels; adjustCanvas is just the
+  // visible copy of whatever's currently in photoCanvas.
+  function renderAdjustCanvas(){
+    if(!photoCanvas || !adjustCtx) return;
+    adjustCtx.clearRect(0,0,adjustCanvas.width, adjustCanvas.height);
+    adjustCtx.filter = 'none';
+    adjustCtx.drawImage(photoCanvas,0,0);
+  }
+  function applyAdjustments(){
+    if(!photoCanvas) return;
+    if(adjustRAF) cancelAnimationFrame(adjustRAF);
+    adjustRAF = requestAnimationFrame(renderAdjustCanvas);
+    drawVignette();
+    // 画像調整 used to be baked in via ctx.filter only on adjustCanvas (the
+    // base photo), so a collage's other photos/text/drawing layers — each
+    // its own separate <canvas> stacked in #world — never saw it at all;
+    // adjusting brightness/contrast after building a collage visibly did
+    // nothing to anything but the one hidden base layer underneath. Putting
+    // the SAME filter on #world instead applies it to the fully-composited
+    // result of every layer together (like flattening for display purposes
+    // only), while every layer's actual pixel data — and its own position/
+    // blend mode/opacity — stays completely untouched and still separately
+    // editable underneath.
+    world.style.filter = isAdjustNeutral() ? 'none' : buildFilterString();
+  }
+  function syncAdjustUI(){
+    document.getElementById('brSlider').value = adjust.brightness; document.getElementById('brVal').textContent = adjust.brightness;
+    document.getElementById('ctSlider').value = adjust.contrast; document.getElementById('ctVal').textContent = adjust.contrast;
+    document.getElementById('stSlider').value = adjust.saturate; document.getElementById('stVal').textContent = adjust.saturate;
+    document.getElementById('wmSlider').value = adjust.warmth; document.getElementById('wmVal').textContent = adjust.warmth;
+    document.getElementById('spSlider').value = adjust.sepia; document.getElementById('spVal').textContent = adjust.sepia;
+    document.getElementById('vgSlider').value = adjust.vignette; document.getElementById('vgVal').textContent = adjust.vignette;
+  }
+  function bindAdjustSlider(id, valId, key){
+    document.getElementById(id).addEventListener('input', e=>{
+      adjust[key] = +e.target.value;
+      document.getElementById(valId).textContent = e.target.value;
+      document.querySelectorAll('.presetChip').forEach(p=>p.classList.remove('sel'));
+      applyAdjustments();
+    });
+  }
+  bindAdjustSlider('brSlider','brVal','brightness');
+  bindAdjustSlider('ctSlider','ctVal','contrast');
+  bindAdjustSlider('stSlider','stVal','saturate');
+  bindAdjustSlider('wmSlider','wmVal','warmth');
+  bindAdjustSlider('spSlider','spVal','sepia');
+  bindAdjustSlider('vgSlider','vgVal','vignette');
+
+  // ---------------- De-yellow (黄ばみ除去) ----------------
+  // Unlike 色温度 (which is a blanket hue-rotate over the whole image), this
+  // looks at each pixel's own R/G-vs-B balance and only pulls back the ones
+  // that actually read as yellowish — so skin/background yellow casts fade
+  // without shifting blues, pinks, etc. It's a real pixel edit (like blur),
+  // so it previews live while dragging and commits as one undo step on release.
+  const deyellowSlider = document.getElementById('deyellowSlider');
+  const deyellowVal = document.getElementById('deyellowVal');
+  let deyellowBeforeData = null, deyellowRAF = null;
+  function applyDeyellow(baseData, amount){
+    if(!photoCtx) return;
+    if(amount<=0){ photoCtx.putImageData(baseData,0,0); return; }
+    const data = new Uint8ClampedArray(baseData.data);
+    const k = amount/100;
+    for(let i=0;i<data.length;i+=4){
+      const r=data[i], g=data[i+1], b=data[i+2];
+      const yellow = Math.max(0, (r+g)/2 - b); // how yellow this pixel reads
+      if(yellow>0){
+        const reduce = yellow*k*0.9;
+        data[i]   = Math.max(0, r - reduce*0.5);
+        data[i+1] = Math.max(0, g - reduce*0.35);
+        data[i+2] = Math.min(255, b + reduce*0.6);
+      }
+    }
+    photoCtx.putImageData(new ImageData(data, baseData.width, baseData.height), 0, 0);
+    renderAdjustCanvas();
+  }
+  if(deyellowSlider){
+    deyellowSlider.addEventListener('pointerdown', ()=>{
+      if(!photoCtx) return;
+      deyellowBeforeData = photoCtx.getImageData(0,0,photoCanvas.width,photoCanvas.height);
+    });
+    deyellowSlider.addEventListener('input', ()=>{
+      deyellowVal.textContent = deyellowSlider.value;
+      if(!deyellowBeforeData) return;
+      if(deyellowRAF) cancelAnimationFrame(deyellowRAF);
+      deyellowRAF = requestAnimationFrame(()=> applyDeyellow(deyellowBeforeData, +deyellowSlider.value));
+    });
+    deyellowSlider.addEventListener('change', ()=>{
+      if(deyellowBeforeData){
+        pushHistory({id:PHOTO_ID}, deyellowBeforeData);
+        deyellowBeforeData = null;
+      }
+      // this is a one-shot "apply now" slider, not a persistent value —
+      // reset it so it's ready for another pass, and update the layers-sheet
+      // thumbnail for the base photo if it's open.
+      deyellowSlider.value = 0; deyellowVal.textContent = '0';
+      if(sheets.layers.classList.contains('show')) renderLayerList();
+    });
+  }
+
+  // ---------------- Sharpen (シャープ) ----------------
+  // A dedicated "make it crisper" control, separate from 解像度アップ — that
+  // one only helps when the photo is genuinely small/low-res; this instead
+  // adds contrast right at edges (a classic unsharp mask, reusing the same
+  // sharpenCanvas() the export/upscale flow already uses) to make an already
+  // full-size but slightly soft/blurry photo look more defined, without
+  // changing its dimensions. Same one-shot slider pattern as 黄ばみ除去: it
+  // previews live while dragging and commits as a single undo step on release.
+  const sharpenSlider = document.getElementById('sharpenSlider');
+  const sharpenVal = document.getElementById('sharpenVal');
+  let sharpenBeforeData = null, sharpenRAF = null;
+  function applySharpen(baseData, amount){
+    if(!photoCtx) return;
+    photoCtx.putImageData(baseData,0,0);
+    if(amount>0){
+      // amount 0-100 -> unsharp-mask strength up to ~1.2x, with a small fixed
+      // radius — enough to look noticeably crisper without a harsh halo.
+      sharpenCanvas(photoCanvas, (amount/100)*1.2, 1.2);
+    }
+    renderAdjustCanvas();
+  }
+  if(sharpenSlider){
+    sharpenSlider.addEventListener('pointerdown', ()=>{
+      if(!photoCtx) return;
+      sharpenBeforeData = photoCtx.getImageData(0,0,photoCanvas.width,photoCanvas.height);
+    });
+    sharpenSlider.addEventListener('input', ()=>{
+      sharpenVal.textContent = sharpenSlider.value;
+      if(!sharpenBeforeData) return;
+      if(sharpenRAF) cancelAnimationFrame(sharpenRAF);
+      sharpenRAF = requestAnimationFrame(()=> applySharpen(sharpenBeforeData, +sharpenSlider.value));
+    });
+    sharpenSlider.addEventListener('change', ()=>{
+      if(sharpenBeforeData){
+        pushHistory({id:PHOTO_ID}, sharpenBeforeData);
+        sharpenBeforeData = null;
+      }
+      sharpenSlider.value = 0; sharpenVal.textContent = '0';
+      if(sheets.layers.classList.contains('show')) renderLayerList();
+    });
+  }
+
+  document.querySelectorAll('.presetChip').forEach(chip=>{
+    chip.addEventListener('click', ()=>{
+      document.querySelectorAll('.presetChip').forEach(p=>p.classList.remove('sel'));
+      chip.classList.add('sel');
+      Object.assign(adjust, PRESETS[chip.dataset.preset]);
+      syncAdjustUI();
+      applyAdjustments();
+    });
+  });
+  document.getElementById('resetAdjustBtn').addEventListener('click', ()=>{
+    Object.assign(adjust, PRESETS.normal);
+    syncAdjustUI(); applyAdjustments();
+    document.querySelectorAll('.presetChip').forEach(p=>p.classList.remove('sel'));
+    document.querySelector('.presetChip[data-preset="normal"]').classList.add('sel');
+    showToast('調整をリセットしました');
+  });
+
+  function rotate90(){
+    if(!state.imgW) return;
+    const newW = state.imgH, newH = state.imgW;
+    allCanvases().forEach(c=>{
+      const tmp = document.createElement('canvas'); tmp.width=c.width; tmp.height=c.height;
+      tmp.getContext('2d').drawImage(c,0,0);
+      c.width = newW; c.height = newH;
+      const ctx = c.getContext('2d');
+      ctx.save(); ctx.translate(newW/2,newH/2); ctx.rotate(Math.PI/2);
+      ctx.drawImage(tmp, -tmp.width/2, -tmp.height/2);
+      ctx.restore();
+    });
+    state.imgW = newW; state.imgH = newH;
+    if(adjustCanvas){ adjustCanvas.width = newW; adjustCanvas.height = newH; renderAdjustCanvas(); }
+    drawVignette();
+    fitToScreen(); renderLayerList();
+    showToast('回転しました');
+  }
+  function flip(axis){
+    if(!state.imgW) return;
+    allCanvases().forEach(c=>{
+      const tmp = document.createElement('canvas'); tmp.width=c.width; tmp.height=c.height;
+      tmp.getContext('2d').drawImage(c,0,0);
+      const ctx = c.getContext('2d');
+      ctx.save(); ctx.clearRect(0,0,c.width,c.height);
+      if(axis==='h'){ ctx.translate(c.width,0); ctx.scale(-1,1); } else { ctx.translate(0,c.height); ctx.scale(1,-1); }
+      ctx.drawImage(tmp,0,0);
+      ctx.restore();
+    });
+    renderAdjustCanvas();
+    showToast(axis==='h' ? '左右反転しました' : '上下反転しました');
+  }
+  document.getElementById('rotateBtn').addEventListener('click', rotate90);
+  document.getElementById('flipHBtn').addEventListener('click', ()=>flip('h'));
+  document.getElementById('flipVBtn').addEventListener('click', ()=>flip('v'));
+
+  // ---------------- Resolution upscale (while editing, not just at export) ----------------
+  // Actually grows the working canvases themselves — useful when a source photo
+  // was small/rough to begin with and everything (brush strokes, zoom, export)
+  // has been looking soft/blocky because of it. Unlike the export-time upscale,
+  // this permanently replaces photoCanvas/layers/etc. at the new resolution, so
+  // every tool keeps working at the improved size afterward.
+  const MAX_WORKING_DIM = 3200; // keeps the live editor responsive on phones
+  function upscaleCanvasInPlace(canvas, targetW, targetH, sharpenAmount){
+    const tmp = document.createElement('canvas');
+    tmp.width = canvas.width; tmp.height = canvas.height;
+    tmp.getContext('2d').drawImage(canvas,0,0);
+    canvas.width = targetW; canvas.height = targetH;
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(tmp,0,0,targetW,targetH);
+    if(sharpenAmount) sharpenCanvas(canvas, sharpenAmount, 1.1);
+  }
+  function updateUpscaleLabel(){
+    const label = document.getElementById('upscaleCurrentLabel');
+    if(!label) return;
+    label.textContent = state.imgW ? `現在：${state.imgW} × ${state.imgH} px` : '現在：-';
+  }
+  function upscaleWorkingImage(scale){
+    if(!state.imgW){ showToast('先に写真を読み込んでね'); return; }
+    let targetW = Math.round(state.imgW*scale), targetH = Math.round(state.imgH*scale);
+    if(Math.max(targetW,targetH) > MAX_WORKING_DIM){
+      const r = MAX_WORKING_DIM/Math.max(targetW,targetH);
+      targetW = Math.round(targetW*r); targetH = Math.round(targetH*r);
+    }
+    if(targetW<=state.imgW && targetH<=state.imgH){
+      showToast('これ以上、編集中の解像度は上げられません');
+      return;
+    }
+    const eff = targetW/state.imgW;
+    const btn = document.getElementById('doUpscaleBtn');
+    if(btn){ btn.disabled = true; btn.textContent = '処理中…'; }
+    showToast('解像度をアップ中…少し待ってね');
+    // Let the toast/button state actually paint before the heavy synchronous work.
+    setTimeout(()=>{
+      // Photo: resample + sharpen — this is the step that actually makes a rough
+      // photo look less soft/blocky at the new size.
+      upscaleCanvasInPlace(photoCanvas, targetW, targetH, 0.35);
+
+      layers.forEach(l=>{
+        if(l.type==='image' && l.sourceImg){
+          // Collage photo layers: redraw straight from their original source
+          // image at the new resolution instead of resampling an
+          // already-rasterized canvas — keeps them sharp rather than
+          // compounding blur on top of blur.
+          l.canvas.width = targetW; l.canvas.height = targetH;
+          l.imgTransform.x *= eff; l.imgTransform.y *= eff; l.imgTransform.scale *= eff;
+          if(l.imgTransform.slot){
+            l.imgTransform.slot.x *= eff; l.imgTransform.slot.y *= eff;
+            l.imgTransform.slot.w *= eff; l.imgTransform.slot.h *= eff;
+          }
+          redrawImageLayer(l);
+        } else if(l.type==='text'){
+          // Same idea as the photo case: re-render the actual text at the new
+          // resolution instead of stretching a bitmap, so it stays crisp —
+          // scale also grows by `eff` so the text stays the same relative
+          // size against the now-larger canvas.
+          l.canvas.width = targetW; l.canvas.height = targetH;
+          l.imgTransform.x *= eff; l.imgTransform.y *= eff; l.imgTransform.scale *= eff;
+          redrawTextLayer(l);
+        } else {
+          upscaleCanvasInPlace(l.canvas, targetW, targetH, 0.2);
+        }
+      });
+
+      vignetteCanvas.width = targetW; vignetteCanvas.height = targetH;
+      adjustCanvas.width = targetW; adjustCanvas.height = targetH;
+      state.imgW = targetW; state.imgH = targetH;
+
+      // Every canvas's pixel dimensions just changed, so old undo/redo snapshots
+      // (recorded at the old size) can no longer be reapplied safely.
+      undoStack.length = 0; redoStack.length = 0; updateHistBtns();
+
+      drawVignette();
+      renderAdjustCanvas();
+      fitToScreen();
+      renderLayerList();
+      updateUpscaleLabel();
+      if(btn){ btn.disabled = false; btn.textContent = 'この倍率で解像度を上げる'; }
+      showToast(`解像度を ${targetW}×${targetH} にアップしました ✨`);
+    }, 30);
+  }
+  let upscaleScale = 2;
+  document.querySelectorAll('#upscaleScaleRow .presetChip').forEach(chip=>{
+    chip.addEventListener('click', ()=>{
+      document.querySelectorAll('#upscaleScaleRow .presetChip').forEach(c=>c.classList.remove('sel'));
+      chip.classList.add('sel');
+      upscaleScale = +chip.dataset.scale;
+    });
+  });
+  document.getElementById('doUpscaleBtn').addEventListener('click', ()=> upscaleWorkingImage(upscaleScale));
+
+  // ---------------- Eyedropper ----------------
+  let eyedropSampleCanvas = null, eyedropSampleCtx = null;
+  function buildSampleCanvas(){
+    eyedropSampleCanvas = document.createElement('canvas');
+    eyedropSampleCanvas.width = state.imgW; eyedropSampleCanvas.height = state.imgH;
+    eyedropSampleCtx = eyedropSampleCanvas.getContext('2d');
+    renderAdjustCanvas(); // make sure it reflects the very latest adjustment values before sampling
+    eyedropSampleCtx.drawImage(adjustCanvas,0,0);
+    eyedropSampleCtx.drawImage(vignetteCanvas,0,0);
+    layers.forEach(l=>{
+      if(!l.visible) return;
+      eyedropSampleCtx.globalAlpha = l.opacity;
+      eyedropSampleCtx.globalCompositeOperation = l.blendMode && l.blendMode!=='normal' ? l.blendMode : 'source-over';
+      eyedropSampleCtx.drawImage(l.canvas,0,0);
+    });
+    eyedropSampleCtx.globalAlpha = 1;
+    eyedropSampleCtx.globalCompositeOperation = 'source-over';
+  }
+  function pickColorAt(x,y){
+    if(!eyedropSampleCtx) return;
+    const ix = Math.max(0, Math.min(eyedropSampleCanvas.width-1, Math.round(x)));
+    const iy = Math.max(0, Math.min(eyedropSampleCanvas.height-1, Math.round(y)));
+    const d = eyedropSampleCtx.getImageData(ix,iy,1,1).data;
+    if(d[3]===0) return null;
+    const hex = '#' + [d[0],d[1],d[2]].map(v=>v.toString(16).padStart(2,'0')).join('');
+    setColor(hex);
+    document.querySelectorAll('.swatch').forEach(s=>s.classList.remove('sel'));
+    return hex;
+  }
+
+  // ---------------- Pointer handling ----------------
+  function redrawMovableLayer(layer){
+    if(layer.type==='text') redrawTextLayer(layer); else redrawImageLayer(layer);
+  }
+  const activePointers = new Map();
+  let pinch = null; // {startDist, }
+  let stroke = null;
+  let justPinched = false;
+  let imgDrag = null, imgDragBefore = null; // active drag/scale of a collage image layer
+
+  function dist(a,b){ return Math.hypot(a.x-b.x, a.y-b.y); }
+  function mid(a,b){ return {x:(a.x+b.x)/2, y:(a.y+b.y)/2}; }
+
+  stageWrap.addEventListener('pointerdown', e=>{
+    if(!state.imgW) return;
+
+    // Palm rejection: while drawing with an Apple Pencil / stylus, ignore any extra
+    // finger touch that lands on the screen (e.g. a resting palm) instead of treating
+    // it as a second pinch-pointer — this was the main cause of lines cutting off mid-stroke.
+    if(e.pointerType==='touch' && activePointers.size>=1){
+      const already = [...activePointers.values()];
+      if(already.some(p=>p.type==='pen')) return;
+    }
+
+    stageWrap.setPointerCapture(e.pointerId);
+    activePointers.set(e.pointerId, {x:e.clientX, y:e.clientY, pressure:e.pressure, type:e.pointerType});
+
+    if(activePointers.size === 1 && !justPinched){
+      if(state.tool==='pen' || state.tool==='eraser' || state.tool==='blur' || state.tool==='smudge'){
+        startStroke(e);
+      } else if(state.tool==='pan'){
+        pinch = {mode:'pan1', last:{x:e.clientX,y:e.clientY}};
+      } else if(state.tool==='eyedropper'){
+        buildSampleCanvas();
+        const cp = screenToCanvas(e.clientX, e.clientY);
+        pickColorAt(cp.x, cp.y);
+        updateCursor(e);
+      } else if(state.tool==='imgmove'){
+        const layer = getActiveLayer();
+        if(layer && (layer.type==='image' || layer.type==='text')){
+          imgDragBefore = layer.ctx.getImageData(0,0,layer.canvas.width,layer.canvas.height);
+          imgDrag = {layer, startX:layer.imgTransform.x, startY:layer.imgTransform.y, startPX:e.clientX, startPY:e.clientY};
+          // Hide the blend ghost (if any) for the duration of the drag — it's
+          // only synced on commit, so leaving it visible mid-drag would show
+          // a stale copy lagging behind at the pre-drag position.
+          if(layer.ghostCanvas) layer.ghostCanvas.style.display = 'none';
+        } else {
+          showToast('動かす写真・文字レイヤーをレイヤー一覧で選んでね');
+        }
+      }
+    } else if(activePointers.size === 2){
+      if(stroke){ cancelStroke(); }
+      const pts = [...activePointers.values()];
+      if(state.tool==='imgmove' && imgDrag){
+        pinch = {mode:'imgscale', startDist: dist(pts[0],pts[1]), startScale: imgDrag.layer.imgTransform.scale};
+      } else {
+        pinch = {mode:'pinch', startDist: dist(pts[0],pts[1])};
+      }
+    }
+  });
+
+  stageWrap.addEventListener('pointermove', e=>{
+    if(!activePointers.has(e.pointerId)) return;
+    activePointers.set(e.pointerId, {x:e.clientX, y:e.clientY, pressure:e.pressure, type:e.pointerType});
+    updateCursor(e);
+
+    if(activePointers.size === 1 && stroke){
+      continueStroke(e);
+    } else if(activePointers.size === 1 && state.tool==='eyedropper' && eyedropSampleCtx){
+      const cp = screenToCanvas(e.clientX, e.clientY);
+      pickColorAt(cp.x, cp.y);
+      updateCursor(e);
+    } else if(activePointers.size === 1 && state.tool==='imgmove' && imgDrag){
+      const dx = (e.clientX - imgDrag.startPX)/state.scale;
+      const dy = (e.clientY - imgDrag.startPY)/state.scale;
+      imgDrag.layer.imgTransform.x = imgDrag.startX + dx;
+      imgDrag.layer.imgTransform.y = imgDrag.startY + dy;
+      redrawMovableLayer(imgDrag.layer);
+    } else if(activePointers.size === 1 && pinch && pinch.mode==='pan1'){
+      const dx = e.clientX - pinch.last.x, dy = e.clientY - pinch.last.y;
+      state.tx += dx; state.ty += dy;
+      pinch.last = {x:e.clientX,y:e.clientY};
+      applyTransform();
+    } else if(activePointers.size === 2 && pinch && pinch.mode==='pinch'){
+      const pts = [...activePointers.values()];
+      const newDist = dist(pts[0],pts[1]);
+      const newMid = mid(pts[0],pts[1]);
+      const canvasPt = screenToCanvas(newMid.x, newMid.y);
+      let newScale = state.scale * (newDist/(pinch.lastDist||newDist));
+      newScale = Math.max(0.1, Math.min(8, newScale));
+      state.scale = newScale;
+      const rect = stageWrap.getBoundingClientRect();
+      state.tx = (newMid.x - rect.left) - canvasPt.x*state.scale;
+      state.ty = (newMid.y - rect.top) - canvasPt.y*state.scale;
+      pinch.lastDist = newDist;
+      applyTransform();
+    } else if(activePointers.size === 2 && pinch && pinch.mode==='imgscale' && imgDrag){
+      const pts = [...activePointers.values()];
+      const newDist = dist(pts[0],pts[1]);
+      const ratio = newDist/(pinch.startDist||newDist);
+      imgDrag.layer.imgTransform.scale = Math.max(0.05, Math.min(6, pinch.startScale*ratio));
+      redrawMovableLayer(imgDrag.layer);
+    }
+  });
+
+  function endPointer(e){
+    activePointers.delete(e.pointerId);
+    if(activePointers.size === 0){
+      if(stroke) commitStroke();
+      if(imgDrag){
+        pushHistory(imgDrag.layer, imgDragBefore);
+        refreshLayerThumb(imgDrag.layer);
+        imgDrag = null; imgDragBefore = null;
+      }
+      if(state.tool==='eyedropper' && eyedropSampleCtx){
+        eyedropSampleCtx = null; eyedropSampleCanvas = null;
+        showToast('スポイトで色を取得しました 🎨');
+      }
+      if(pinch && pinch.mode==='pinch'){ justPinched = true; setTimeout(()=>justPinched=false, 120); }
+      pinch = null;
+      cursorDot.style.display='none';
+      cursorDot.classList.remove('eyedrop');
+    } else if(activePointers.size === 1){
+      pinch = null;
+      justPinched = true; setTimeout(()=>justPinched=false, 120);
+    }
+  }
+  stageWrap.addEventListener('pointerup', endPointer);
+  stageWrap.addEventListener('pointercancel', endPointer);
+  stageWrap.addEventListener('pointerleave', e=>{ if(activePointers.size<=1) cursorDot.style.display='none'; });
+
+  function updateCursor(e){
+    if(state.tool==='pen'||state.tool==='eraser'||state.tool==='blur'||state.tool==='smudge'){
+      cursorDot.classList.remove('eyedrop');
+      const rect = stageWrap.getBoundingClientRect();
+      const px = (e.clientX-rect.left), py=(e.clientY-rect.top);
+      const sizePx = (state.tool==='blur' ? state.blurSize : state.tool==='smudge' ? state.smudgeSize : state.tool==='eraser' ? state.eraserSize : state.size)*state.scale;
+      cursorDot.style.display = activePointers.size===1 ? 'block':'none';
+      cursorDot.style.background = 'transparent';
+      cursorDot.style.width = sizePx+'px';
+      cursorDot.style.height = sizePx+'px';
+      cursorDot.style.left = px+'px';
+      cursorDot.style.top = py+'px';
+    } else if(state.tool==='eyedropper'){
+      cursorDot.classList.add('eyedrop');
+      const rect = stageWrap.getBoundingClientRect();
+      const px = (e.clientX-rect.left), py=(e.clientY-rect.top-40);
+      cursorDot.style.display = activePointers.size===1 ? 'block':'none';
+      cursorDot.style.width='34px'; cursorDot.style.height='34px';
+      cursorDot.style.left = px+'px'; cursorDot.style.top = py+'px';
+      cursorDot.style.background = state.color;
+    } else {
+      cursorDot.style.display='none';
+    }
+  }
+
+  // ---------------- Brush engine ----------------
+  // Live strokes are rendered onto a separate lightweight preview canvas (cheap
+  // clearRect + drawImage every frame) instead of doing a full-canvas getImageData/
+  // putImageData round-trip on every pointermove. On a large canvashigh-res photo,
+  // that round trip was expensive enough on mid-range phones to stall the browser's
+  // touch tracking mid-stroke, which is what caused the line to visibly break and
+  // resume as a new disconnected segment.
+  let previewCanvas = null, previewCtx = null;
+  function ensurePreviewCanvas(){
+    if(!previewCanvas){
+      previewCanvas = document.createElement('canvas');
+      previewCanvas.className = 'smooth';
+      previewCtx = previewCanvas.getContext('2d');
+    }
+    if(previewCanvas.width!==state.imgW || previewCanvas.height!==state.imgH){
+      previewCanvas.width = state.imgW; previewCanvas.height = state.imgH;
+    }
+  }
+
+  // The live preview canvas has to sit at the right depth in #world's stacking
+  // order: right above whatever it's standing in for. For a normal layer that's
+  // simply right after that layer's own canvas; for the base photo (which now
+  // sits *below* adjustCanvas/vignette in the DOM) it needs to go right where
+  // adjustCanvas is, so the in-progress edit still shows underneath layers above it.
+  function insertPreviewFor(target){
+    if(target.isPhoto){ world.insertBefore(previewCanvas, adjustCanvas); }
+    else { target.canvas.after(previewCanvas); }
+  }
+  function setTargetVisible(target, visible){
+    if(target.isPhoto){ if(adjustCanvas) adjustCanvas.style.visibility = visible ? 'visible' : 'hidden'; }
+    else { target.canvas.style.visibility = visible ? 'visible' : 'hidden'; }
+  }
+
+  function startStroke(e){
+    const layer = getActiveLayer();
+    if(!layer) return;
+    const cp = screenToCanvas(e.clientX, e.clientY);
+    const pr = pressureOf(e);
+    stroke = {
+      layer,
+      before: (state.tool!=='blur' && state.tool!=='smudge') ? layer.ctx.getImageData(0,0,layer.canvas.width, layer.canvas.height) : null,
+      raw: {x:cp.x, y:cp.y},
+      smooth: {x:cp.x, y:cp.y},
+      points: [{x:cp.x, y:cp.y, p:pr, t:performance.now()}],
+      scratch: document.createElement('canvas'),
+    };
+    stroke.scratch.width = layer.canvas.width; stroke.scratch.height = layer.canvas.height;
+    stroke.scratchCtx = stroke.scratch.getContext('2d');
+    if(state.tool!=='blur' && state.tool!=='smudge'){
+      ensurePreviewCanvas();
+      insertPreviewFor(layer);
+      previewCanvas.style.opacity = layer.opacity;
+      setTargetVisible(layer, false);
+      drawLiveDot(stroke.smooth.x, stroke.smooth.y, pr);
+      compositePreview();
+    }
+  }
+
+  function pressureOf(e){
+    // The eraser always erases at a constant, full-strength width — no dynamic
+    // sizing from pen pressure or finger swipe speed. Previously it inherited the
+    // same pressure/speed-based width as the pen, so fast or light erase strokes
+    // could come out thin and leave partially-erased "ghost" edges, which is what
+    // made erasing feel inconsistent/unreliable.
+    if(state.tool==='eraser') return 1;
+    if(state.pressureEnabled && e.pointerType==='pen' && e.pressure>0) return Math.max(0.15, e.pressure);
+    if(state.pressureEnabled && e.pointerType!=='pen'){
+      return null; // handled via speed dynamically in continueStroke
+    }
+    return 1;
+  }
+
+  function continueStroke(e){
+    if(!stroke) return;
+    const cp = screenToCanvas(e.clientX, e.clientY);
+    const k = 1/(1+state.stabilization*1.6);
+    stroke.smooth.x += (cp.x - stroke.smooth.x)*k;
+    stroke.smooth.y += (cp.y - stroke.smooth.y)*k;
+
+    let pr = pressureOf(e);
+    if(pr===null){
+      // finger: derive pseudo-pressure from movement speed (slower = thicker, like real strokes)
+      const last = stroke.points[stroke.points.length-1];
+      const dt = Math.max(8, performance.now()-last.t);
+      const spd = Math.hypot(stroke.smooth.x-last.x, stroke.smooth.y-last.y)/dt;
+      pr = Math.max(0.35, Math.min(1, 1.1 - spd*3.2));
+    }
+    const last = stroke.points[stroke.points.length-1];
+    stroke.scratchCtx.lineCap='round'; stroke.scratchCtx.lineJoin='round';
+    drawSegment(stroke.scratchCtx, last.x, last.y, stroke.smooth.x, stroke.smooth.y, sizeFor(last.p), sizeFor(pr));
+    stroke.points.push({x:stroke.smooth.x, y:stroke.smooth.y, p:pr, t:performance.now()});
+    compositePreview();
+  }
+
+  // The eraser has its own independent size (state.eraserSize) instead of
+  // sharing state.size with the pen — previously switching tools meant the
+  // eraser silently inherited whatever size the pen happened to be set to,
+  // with no dedicated way to change it, which is what made erasing feel
+  // unpredictable/hard to control.
+  function sizeFor(p){
+    const base = state.tool==='eraser' ? state.eraserSize : state.size;
+    return base * (p==null?1:p);
+  }
+
+  function drawLiveDot(x,y,p){
+    const r = sizeFor(p==null?1:p)/2;
+    stroke.scratchCtx.fillStyle = '#000';
+    stroke.scratchCtx.beginPath(); stroke.scratchCtx.arc(x,y,r,0,Math.PI*2); stroke.scratchCtx.fill();
+  }
+
+  function drawSegment(ctx, x0,y0,x1,y1, w0,w1){
+    ctx.save();
+    ctx.strokeStyle = '#000'; ctx.fillStyle='#000';
+    const steps = Math.max(1, Math.ceil(Math.hypot(x1-x0,y1-y0)/2));
+    for(let i=0;i<=steps;i++){
+      const t=i/steps;
+      const x=x0+(x1-x0)*t, y=y0+(y1-y0)*t;
+      const w=(w0+(w1-w0)*t)/2;
+      ctx.beginPath(); ctx.arc(x,y,Math.max(0.4,w),0,Math.PI*2); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function compositePreview(){
+    const layer = stroke.layer;
+    // cheap GPU-friendly snapshot of the (untouched) real layer, instead of
+    // restoring it via putImageData every frame
+    previewCtx.clearRect(0,0,previewCanvas.width, previewCanvas.height);
+    previewCtx.drawImage(layer.canvas,0,0);
+    previewCtx.save();
+    if(state.tool==='eraser'){
+      previewCtx.globalCompositeOperation='destination-out';
+      previewCtx.globalAlpha = state.eraserOpacity/100;
+      previewCtx.drawImage(stroke.scratch,0,0);
+    } else if(state.tool==='blur'){
+      // handled fully by the blur stroke hooks during move; nothing to composite here
+    } else {
+      previewCtx.globalAlpha = state.opacity/100;
+      colorizeAndDraw(previewCtx, stroke.scratch, state.color, state.brushType);
+    }
+    previewCtx.restore();
+  }
+
+  // Small seeded PRNG + hash so a glitter tile is stable/reproducible per color
+  // (no flicker/regeneration each time the same color is redrawn).
+  function hashStr(s){ let h=0; for(let i=0;i<s.length;i++){ h = (h*31 + s.charCodeAt(i))|0; } return h>>>0; }
+  function mulberry32(seed){
+    return function(){
+      seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+      let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  const glitterTileCache = {};
+  // Builds a small repeatable texture tile of sparse specks — no solid color
+  // wash underneath. Previously there was a 50%-opacity flat color fill behind
+  // the specks, which made グリッター look like a plain tinted area with a bit
+  // of sparkle on top instead of actual scattered glitter dust (the surface
+  // between individual flecks should stay untouched/transparent, like real
+  // glitter). Tiled via createPattern so painting with it costs the same as a
+  // flat fillRect (no per-pixel work while drawing), which keeps it fast enough
+  // to use live while dragging.
+  // flakeSize (1-10) controls how big each speck is; density (10-100) controls
+  // how many of them there are per tile.
+  function getGlitterTile(color, flakeSize, density){
+    flakeSize = flakeSize || 3; density = density || 55;
+    const key = color+'|'+flakeSize+'|'+density;
+    if(glitterTileCache[key]) return glitterTileCache[key];
+    const size = Math.round(30 + flakeSize*4); // bigger flecks get a bigger tile so they have room to breathe
+    const tile = document.createElement('canvas');
+    tile.width = size; tile.height = size;
+    const tctx = tile.getContext('2d');
+    const rand = mulberry32(hashStr(key));
+    const rBase = 0.25 + flakeSize*0.24;
+    const speckCount = Math.round(8 + density*1.1);
+    for(let i=0;i<speckCount;i++){
+      const x = rand()*size, y = rand()*size;
+      const r = rBase*(0.5+rand()*0.9);
+      tctx.beginPath();
+      if(rand() < 0.4){
+        tctx.globalAlpha = 0.75+rand()*0.25;
+        tctx.fillStyle = color;
+      } else {
+        tctx.globalAlpha = 0.55+rand()*0.45;
+        tctx.fillStyle = '#ffffff';
+      }
+      tctx.arc(x,y,r,0,Math.PI*2);
+      tctx.fill();
+    }
+    tctx.globalAlpha = 1;
+    glitterTileCache[key] = tile;
+    return tile;
+  }
+  function colorizeAndDraw(ctx, maskCanvas, color, btype){
+    const tmp = document.createElement('canvas');
+    tmp.width = maskCanvas.width; tmp.height = maskCanvas.height;
+    const tctx = tmp.getContext('2d');
+    if(btype==='glitter'){
+      tctx.fillStyle = tctx.createPattern(getGlitterTile(color, state.glitterSize, state.glitterDensity), 'repeat');
+    } else {
+      tctx.fillStyle = color;
+    }
+    tctx.fillRect(0,0,tmp.width,tmp.height);
+    tctx.globalCompositeOperation = 'destination-in';
+    // エアブラシ has some built-in softness by nature; on top of that, the
+    // "ふちのやわらかさ" slider lets any brush type (including Gペン) be
+    // softened, so a hard pen can be made to feel fuzzy/blurry like a real
+    // fude-pen instead of always being perfectly crisp.
+    const baseBlur = btype==='soft' ? 3 : 0;
+    const softBlur = (state.softness/100) * 16;
+    const blurPx = baseBlur + softBlur;
+    if(blurPx>0) tctx.filter = `blur(${blurPx}px)`;
+    tctx.drawImage(maskCanvas,0,0);
+    tctx.filter='none';
+    ctx.drawImage(tmp,0,0);
+  }
+
+  function finalizeTaperedStroke(){
+    const layer = stroke.layer;
+    const pts = stroke.points;
+    // layer.ctx was never touched during the stroke (preview lived on previewCanvas),
+    // so it's still in its pre-stroke state here — no need to restore it first.
+    if(pts.length<1) return;
+
+    // total length
+    let total=0;
+    for(let i=1;i<pts.length;i++) total += Math.hypot(pts[i].x-pts[i-1].x, pts[i].y-pts[i-1].y);
+    const finalScratch = document.createElement('canvas');
+    finalScratch.width = layer.canvas.width; finalScratch.height = layer.canvas.height;
+    const fctx = finalScratch.getContext('2d');
+
+    let cum=0;
+    // The eraser never tapers — it always erases at the full brush width from
+    // end to end. Tapering was previously applied here (at commit time) but
+    // *not* during the live preview drawn while dragging (drawSegment there
+    // always used full width), so the moment you lifted your finger the erased
+    // area would visibly shrink back in at both ends — exactly what made
+    // erasing feel broken/inconsistent. Skipping taper for the eraser makes the
+    // live preview and the committed result always match.
+    const applyTaper = state.taperEnabled && state.tool!=='eraser';
+    for(let i=0;i<pts.length;i++){
+      if(i>0) cum += Math.hypot(pts[i].x-pts[i-1].x, pts[i].y-pts[i-1].y);
+      let widthMul = 1;
+      if(applyTaper && total>0){
+        const inLen = total*(state.taperIn/100);
+        const outLen = total*(state.taperOut/100);
+        let f = 1;
+        if(inLen>0) f = Math.min(f, cum/inLen);
+        if(outLen>0) f = Math.min(f, (total-cum)/outLen);
+        widthMul = Math.max(0.06, Math.min(1, f));
+      }
+      pts[i]._w = sizeFor(pts[i].p)*widthMul;
+    }
+    fctx.fillStyle='#000';
+    for(let i=1;i<pts.length;i++){
+      drawSegment(fctx, pts[i-1].x, pts[i-1].y, pts[i].x, pts[i].y, pts[i-1]._w, pts[i]._w);
+    }
+    if(pts.length===1){
+      fctx.beginPath(); fctx.arc(pts[0].x,pts[0].y, sizeFor(pts[0].p)/2, 0, Math.PI*2); fctx.fill();
+    }
+
+    layer.ctx.save();
+    if(state.tool==='eraser'){
+      layer.ctx.globalCompositeOperation='destination-out';
+      layer.ctx.globalAlpha = state.eraserOpacity/100;
+      layer.ctx.drawImage(finalScratch,0,0);
+    } else {
+      layer.ctx.globalAlpha = state.opacity/100;
+      colorizeAndDraw(layer.ctx, finalScratch, state.color, state.brushType);
+    }
+    layer.ctx.restore();
+  }
+
+  // Blur brush: works on whichever target is currently selected (the base
+  // photo, or any single 加筆/コラージュ layer) — exactly like pen/消しゴム do.
+  //
+  // This follows the same three steps a real Gaussian blur does:
+  //   1. 周囲のピクセルをサンプリング — for every pixel, look at its neighbours.
+  //   2. 重み付け平均の計算 — weight them by a gaussian falloff (nearest =
+  //      highest weight) and average, RGBA together. `filter: blur()` below
+  //      is literally this convolution, run on the target's own RGBA data —
+  //      averaging real color pixels together with fully-transparent
+  //      surrounding pixels is exactly what makes the alpha itself grade
+  //      smoothly from 1.0 down to 0.0 near an edge, instead of staying
+  //      opaque with just the color shifting.
+  //   3. 色の再配置 — overwrite the original pixels with that averaged
+  //      result.
+  //
+  // Step 3 is the part earlier attempts got wrong: compositing the blurred
+  // copy ON TOP of the original with normal (source-over) blending isn't an
+  // overwrite, it's an addition — and Porter-Duff's math guarantees
+  // resultAlpha can only stay the same or go UP when you draw on top of an
+  // already fully-opaque pixel, never down. So a solid pen mark's interior
+  // could only ever stay just as dense, or spread color into the surrounding
+  // pixels — never actually soften/dilute the way a genuine overwrite would.
+  // The fix is a real overwrite: read the averaged (blurred) pixel data and
+  // the original pixel data directly and replace each pixel with
+  // mix(original, blurred, t), alpha channel included — computed on the raw
+  // pixel arrays below, not through canvas compositing at all.
+  //
+  // One engineering addition on top of the textbook version: dragging a
+  // brush stamps this many times along the path with overlapping footprints,
+  // so a separate "coverage" map (how much blur each pixel has accumulated
+  // THIS stroke, additive but capped at 1 via 'lighter') is used to recompute
+  // one fresh result each frame from a single frozen pre-stroke snapshot +
+  // one precomputed blur, rather than repeatedly re-overwriting an
+  // already-overwritten result. That keeps the outcome dependent only on the
+  // current shape of the coverage, never on how many intermediate frames
+  // were drawn along the way.
+  function buildRoundMask(w,h,x,y,radius,maxAlpha){
+    const mask = document.createElement('canvas');
+    mask.width = w; mask.height = h;
+    const mctx = mask.getContext('2d');
+    const grad = mctx.createRadialGradient(x,y,0, x,y,radius);
+    grad.addColorStop(0,    `rgba(0,0,0,${maxAlpha})`);
+    grad.addColorStop(0.35, `rgba(0,0,0,${maxAlpha*0.92})`);
+    grad.addColorStop(0.65, `rgba(0,0,0,${maxAlpha*0.55})`);
+    grad.addColorStop(1,    'rgba(0,0,0,0)');
+    mctx.fillStyle = grad;
+    mctx.beginPath(); mctx.arc(x,y,radius,0,Math.PI*2); mctx.fill();
+    return mask;
+  }
+  // Call once when a blur stroke starts.
+  function blurStrokeSetup(target, diameter, strength){
+    const w = target.canvas.width, h = target.canvas.height;
+    const factor = Math.max(0.01, strength/100);
+    const radius = Math.max(2, diameter/2);
+
+    const source = document.createElement('canvas');
+    source.width = w; source.height = h;
+    source.getContext('2d').drawImage(target.canvas,0,0);
+
+    // A real, visible spatial spread — scaled to the brush's own size (like
+    // real blur/out-of-focus tools: a bigger brush blurs a wider area) rather
+    // than a tiny fixed amount, so the edge genuinely widens/softens instead
+    // of just fading in place. This now scales essentially from zero at the
+    // bottom of 強さ — there used to be a fixed baseline term here that
+    // applied even at strength=1, which is why the weakest setting still
+    // diluted a mark away to nothing.
+    const blurPx = Math.max(1, factor*radius*0.5);
+    const blurredFull = document.createElement('canvas');
+    blurredFull.width = w; blurredFull.height = h;
+    const bctx = blurredFull.getContext('2d');
+    bctx.filter = `blur(${blurPx}px)`;
+    bctx.drawImage(source,0,0);
+    bctx.filter = 'none';
+
+    const coverage = document.createElement('canvas');
+    coverage.width = w; coverage.height = h;
+
+    return {
+      w, h, source, blurredFull, coverage,
+      maxAlpha: Math.min(0.9, 0.04 + factor*0.72),
+      minX: w, minY: h, maxX: 0, maxY: 0, // stroke's cumulative bounding box, for cheap re-renders
+    };
+  }
+  // Adds one brush stamp's worth of coverage. 'lighter' adds alpha and clamps
+  // at 1, so however many times you pass back over the same spot within this
+  // stroke, that spot can only approach full coverage — never exceed it.
+  function blurStampAt(session, x, y, diameter){
+    const radius = Math.max(2, diameter/2);
+    const stampMask = buildRoundMask(session.w, session.h, x, y, radius, session.maxAlpha);
+    const cctx = session.coverage.getContext('2d');
+    cctx.globalCompositeOperation = 'lighter';
+    cctx.drawImage(stampMask,0,0);
+    cctx.globalCompositeOperation = 'source-over';
+    session.minX = Math.min(session.minX, x-radius);
+    session.minY = Math.min(session.minY, y-radius);
+    session.maxX = Math.max(session.maxX, x+radius);
+    session.maxY = Math.max(session.maxY, y+radius);
+  }
+  // Re-renders the target from scratch, over just the stroke's bounding box:
+  // result = mix(source, blurredFull, coverage) per pixel, alpha included —
+  // a genuine replace, not a composite, so alpha can drop as well as color
+  // change. Call after each stamp/segment so the live preview stays in sync.
+  function blurRenderFrame(target, session){
+    const bx0 = Math.max(0, Math.floor(session.minX));
+    const by0 = Math.max(0, Math.floor(session.minY));
+    const bx1 = Math.min(session.w, Math.ceil(session.maxX));
+    const by1 = Math.min(session.h, Math.ceil(session.maxY));
+    const bw = bx1-bx0, bh = by1-by0;
+    if(bw<=0 || bh<=0) return;
+
+    const s = session.source.getContext('2d').getImageData(bx0,by0,bw,bh).data;
+    const b = session.blurredFull.getContext('2d').getImageData(bx0,by0,bw,bh).data;
+    const c = session.coverage.getContext('2d').getImageData(bx0,by0,bw,bh).data;
+    const out = new Uint8ClampedArray(s.length);
+    for(let i=0;i<s.length;i+=4){
+      const t = c[i+3]/255;
+      if(t<=0){
+        out[i]=s[i]; out[i+1]=s[i+1]; out[i+2]=s[i+2]; out[i+3]=s[i+3];
+      } else {
+        out[i]   = s[i]  *(1-t) + b[i]  *t;
+        out[i+1] = s[i+1]*(1-t) + b[i+1]*t;
+        out[i+2] = s[i+2]*(1-t) + b[i+2]*t;
+        out[i+3] = s[i+3]*(1-t) + b[i+3]*t;
+      }
+    }
+    target.ctx.putImageData(new ImageData(out, bw, bh), bx0, by0);
+  }
+
+  // Snapshot taken at the start of a blur stroke, of whichever single target is
+  // active — mirrors how pen/eraser record `stroke.before`, so blur now shares
+  // the same one-target undo/redo model instead of a special multi-canvas one.
+  let blurBeforeData = null;
+
+  function commitStroke(){
+    if(!stroke) return;
+    if(state.tool==='blur'){
+      blurSession = null;
+      if(blurBeforeData){
+        pushHistory(stroke.layer, blurBeforeData);
+        blurBeforeData = null;
+        if(stroke.layer.isPhoto) renderAdjustCanvas();
+        else refreshLayerThumb(stroke.layer);
+        if(sheets.layers.classList.contains('show')) renderLayerList();
+      }
+    } else {
+      finalizeTaperedStroke();
+      pushHistory(stroke.layer, stroke.before);
+      // finalizeTaperedStroke() paints straight onto the base photo's raw pixel
+      // canvas (photoCtx) when 元画像 is the selected target, but what's
+      // actually on screen is adjustCanvas — a separate, derived re-render of
+      // that raw canvas. Without refreshing it here, un-hiding adjustCanvas
+      // just below shows its *stale* (pre-stroke) content, so the pen/消しゴム
+      // edit you just made instantly reverts and the photo looks like it
+      // snapped back to untouched (or, after several such "invisible" edits,
+      // like large parts of it had vanished once something else finally
+      // triggered a redraw). Ordinary 加筆/コラージュ layers don't need this —
+      // they show their own canvas directly.
+      if(stroke.layer.isPhoto) renderAdjustCanvas(); else refreshLayerThumb(stroke.layer);
+      setTargetVisible(stroke.layer, true);
+      if(previewCtx) previewCtx.clearRect(0,0,previewCanvas.width, previewCanvas.height);
+    }
+    stroke = null;
+  }
+  function cancelStroke(){
+    if(!stroke) return;
+    if(state.tool==='blur'){
+      blurSession = null;
+      if(blurBeforeData){
+        stroke.layer.ctx.putImageData(blurBeforeData,0,0);
+        if(stroke.layer.isPhoto) renderAdjustCanvas();
+      }
+      blurBeforeData = null;
+    } else {
+      // layer.ctx itself was never modified during the stroke (live preview lived on
+      // previewCanvas), so there's nothing to restore on it — just reveal it again.
+      setTargetVisible(stroke.layer, true);
+      if(previewCtx) previewCtx.clearRect(0,0,previewCanvas.width, previewCanvas.height);
+    }
+    stroke = null;
+  }
+
+  // hook blur into continueStroke/startStroke without disturbing pen/eraser code paths
+  let blurSession = null; // { source, blurredFull, coverage, maxAlpha, ... } for the current stroke
+  const _startStroke = startStroke, _continueStroke = continueStroke;
+  startStroke = function(e){
+    _startStroke(e);
+    if(state.tool==='blur' && stroke){
+      const target = stroke.layer;
+      blurBeforeData = target.ctx.getImageData(0,0,target.canvas.width,target.canvas.height);
+      blurSession = blurStrokeSetup(target, state.blurSize, state.blurStrength);
+      const cp = screenToCanvas(e.clientX, e.clientY);
+      blurStampAt(blurSession, cp.x, cp.y, state.blurSize);
+      blurRenderFrame(target, blurSession);
+      if(target.isPhoto) renderAdjustCanvas();
+    }
+  };
+  continueStroke = function(e){
+    if(state.tool==='blur' && stroke){
+      const target = stroke.layer;
+      const cp = screenToCanvas(e.clientX, e.clientY);
+      const k = 1/(1+state.stabilization*1.6);
+      stroke.smooth.x += (cp.x - stroke.smooth.x)*k;
+      stroke.smooth.y += (cp.y - stroke.smooth.y)*k;
+      // stamp along the whole path (not just the raw event point) so fast strokes
+      // don't leave un-blurred gaps between pointermove events
+      const last = stroke.points[stroke.points.length-1];
+      const segDist = Math.hypot(stroke.smooth.x-last.x, stroke.smooth.y-last.y);
+      const stepSize = Math.max(4, state.blurSize*0.18);
+      const steps = Math.max(1, Math.round(segDist/stepSize));
+      for(let i=1;i<=steps;i++){
+        const t=i/steps;
+        blurStampAt(blurSession, last.x+(stroke.smooth.x-last.x)*t, last.y+(stroke.smooth.y-last.y)*t, state.blurSize);
+      }
+      blurRenderFrame(target, blurSession);
+      // Only the base photo needs an explicit refresh of what's on screen — it's
+      // rendered via adjustCanvas (a separate, derived canvas) rather than showing
+      // its own pixels directly. Ordinary layers show their own canvas live, so
+      // nothing extra is needed for them.
+      if(target.isPhoto) renderAdjustCanvas();
+      stroke.points.push({x:stroke.smooth.x, y:stroke.smooth.y, p:1, t:performance.now()});
+      return;
+    }
+    _continueStroke(e);
+  };
+
+  // ---------------- 指でなぞる (smudge) ----------------
+  // This is a genuinely different tool from ぼかし, even though both end up
+  // softening things: blur averages a pixel with its neighbours in place;
+  // smudge — like Photoshop/Illustrator's finger tool — picks up whatever's
+  // under the brush and drags it along the stroke, like a finger through wet
+  // paint. Three distinct steps, kept as three distinct steps here so each
+  // does exactly one job:
+  //   1. 色の吸い上げ — snapshot the pixels under the brush into a buffer.
+  //   2. 減衰 — every step, the buffer's OWN opacity is scaled down a little
+  //      before it's laid down again, simulating the dragged paint physically
+  //      thinning out. This was missing before: blending fresh color in was
+  //      standing in for it, but that only dilutes the buffer's color, not
+  //      its overall density — so a long drag could smear forever instead of
+  //      the original color actually fading out.
+  //   3. 新しい色との混色 — after laying the (now-thinner) buffer down, pick
+  //      up a bit of whatever's now underneath at the new spot, so the
+  //      buffer keeps evolving with the colors it passes over rather than
+  //      dragging the exact original swatch the whole way.
+  function smudgeStrokeSetup(diameter, strength){
+    const size = Math.max(4, Math.ceil(diameter) + 4);
+    const factor = Math.max(0.01, strength/100);
+    return {
+      size, carried: null, hasPickup: false,
+      // 強さ: higher なぞる強さ means the buffer holds onto its paint longer
+      // (decays slower), picks up less of the fresh color underneath each
+      // step, and each stamp itself lays down more densely — a strong drag
+      // keeps dragging the original color further and more visibly; a weak
+      // one fades and blends into the background almost immediately. All
+      // three were previously too strong even at 強さ=1 (decay barely
+      // reduced anything, and every stamp was laid down at full alpha
+      // regardless of 強さ) — the ranges are lowered across the board so 1
+      // now reads as a mild/normal touch rather than a heavy drag.
+      decayKeep: 0.35 + factor*0.45,             // was 0.72–0.96 → now 0.35–0.80
+      pickupRate: Math.min(0.95, 0.75 - factor*0.35), // was 0.2–0.65 → now 0.4–0.75
+      flowAlpha: Math.min(0.8, 0.15 + factor*0.55),   // NEW: caps how strongly a single stamp lays down, independent of decay
+    };
+  }
+  // Scales every pixel's alpha (and its visual weight) by `keep` — the
+  // literal "不透明度を徐々に下げる" step.
+  function decaySwatch(src, keep){
+    const out = document.createElement('canvas');
+    out.width = src.width; out.height = src.height;
+    const octx = out.getContext('2d');
+    octx.globalAlpha = keep;
+    octx.drawImage(src, 0, 0);
+    return out;
+  }
+  function smudgeStampAt(session, target, x, y, diameter){
+    const ctx = target.ctx;
+    const size = session.size;
+    const radius = diameter/2;
+    const ox = Math.round(x - size/2), oy = Math.round(y - size/2);
+
+    if(session.hasPickup){
+      // 減衰 first — the buffer is a little thinner than it was last step.
+      session.carried = decaySwatch(session.carried, session.decayKeep);
+
+      // Then lay that (now-thinner) paint down at the new position, shaped
+      // by a soft round brush so the edge feathers rather than stamping a
+      // hard square/circle. flowAlpha further caps how strongly any single
+      // stamp shows up, on top of decay, so 強さ also controls the
+      // moment-to-moment intensity, not just how long the drag persists.
+      const mask = buildRoundMask(size, size, size/2, size/2, radius, session.flowAlpha);
+      const stamp = document.createElement('canvas');
+      stamp.width = size; stamp.height = size;
+      const stctx = stamp.getContext('2d');
+      stctx.drawImage(session.carried, 0, 0);
+      stctx.globalCompositeOperation = 'destination-in';
+      stctx.drawImage(mask, 0, 0);
+
+      ctx.save();
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = 1;
+      ctx.drawImage(stamp, ox, oy);
+      ctx.restore();
+    }
+
+    // 新しい色との混色: pick up whatever's now under the brush at this spot.
+    const freshSample = document.createElement('canvas');
+    freshSample.width = size; freshSample.height = size;
+    freshSample.getContext('2d').drawImage(target.canvas, ox, oy, size, size, 0, 0, size, size);
+
+    if(!session.hasPickup){
+      session.carried = freshSample;
+      session.hasPickup = true;
+    } else {
+      const blended = document.createElement('canvas');
+      blended.width = size; blended.height = size;
+      const bctx = blended.getContext('2d');
+      bctx.drawImage(session.carried, 0, 0);
+      bctx.globalAlpha = session.pickupRate;
+      bctx.drawImage(freshSample, 0, 0);
+      session.carried = blended;
+    }
+  }
+
+  let smudgeSession = null; // { size, carried, hasPickup } for the current stroke
+  let smudgeBeforeData = null;
+  const _commitStroke = commitStroke, _cancelStroke = cancelStroke;
+  commitStroke = function(){
+    if(stroke && state.tool==='smudge'){
+      const layer = stroke.layer;
+      smudgeSession = null;
+      if(smudgeBeforeData){
+        pushHistory(layer, smudgeBeforeData);
+        smudgeBeforeData = null;
+        if(layer.isPhoto) renderAdjustCanvas();
+        else refreshLayerThumb(layer);
+        if(sheets.layers.classList.contains('show')) renderLayerList();
+      }
+      stroke = null;
+      return;
+    }
+    _commitStroke();
+  };
+  cancelStroke = function(){
+    if(stroke && state.tool==='smudge'){
+      smudgeSession = null;
+      if(smudgeBeforeData){
+        stroke.layer.ctx.putImageData(smudgeBeforeData,0,0);
+        if(stroke.layer.isPhoto) renderAdjustCanvas();
+      }
+      smudgeBeforeData = null;
+      stroke = null;
+      return;
+    }
+    _cancelStroke();
+  };
+  const _startStroke2 = startStroke, _continueStroke2 = continueStroke;
+  startStroke = function(e){
+    _startStroke2(e);
+    if(state.tool==='smudge' && stroke){
+      const target = stroke.layer;
+      smudgeBeforeData = target.ctx.getImageData(0,0,target.canvas.width,target.canvas.height);
+      smudgeSession = smudgeStrokeSetup(state.smudgeSize, state.smudgeStrength);
+      const cp = screenToCanvas(e.clientX, e.clientY);
+      smudgeStampAt(smudgeSession, target, cp.x, cp.y, state.smudgeSize);
+      if(target.isPhoto) renderAdjustCanvas();
+    }
+  };
+  continueStroke = function(e){
+    if(state.tool==='smudge' && stroke){
+      const target = stroke.layer;
+      const cp = screenToCanvas(e.clientX, e.clientY);
+      const k = 1/(1+state.stabilization*1.6);
+      stroke.smooth.x += (cp.x - stroke.smooth.x)*k;
+      stroke.smooth.y += (cp.y - stroke.smooth.y)*k;
+      const last = stroke.points[stroke.points.length-1];
+      const segDist = Math.hypot(stroke.smooth.x-last.x, stroke.smooth.y-last.y);
+      const stepSize = Math.max(4, state.smudgeSize*0.15);
+      const steps = Math.max(1, Math.round(segDist/stepSize));
+      for(let i=1;i<=steps;i++){
+        const t=i/steps;
+        smudgeStampAt(smudgeSession, target, last.x+(stroke.smooth.x-last.x)*t, last.y+(stroke.smooth.y-last.y)*t, state.smudgeSize);
+      }
+      if(target.isPhoto) renderAdjustCanvas();
+      stroke.points.push({x:stroke.smooth.x, y:stroke.smooth.y, p:1, t:performance.now()});
+      return;
+    }
+    _continueStroke2(e);
+  };
+
+  // ---------------- Toolbar interactions ----------------
+  document.querySelectorAll('.tool[data-tool]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.tool[data-tool]').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      state.tool = btn.dataset.tool;
+      updateBrushBtnLabel();
+    });
+  });
+  updateBrushBtnLabel();
+
+  // ---------------- Sheets ----------------
+  const sheets = {
+    brush: document.getElementById('brushSheet'),
+    eraser: document.getElementById('eraserSheet'),
+    blur: document.getElementById('blurSheet'),
+    smudge: document.getElementById('smudgeSheet'),
+    color: document.getElementById('colorSheet'),
+    layers: document.getElementById('layersSheet'),
+    adjust: document.getElementById('adjustSheet'),
+    size: document.getElementById('sizeSheet'),
+    export: document.getElementById('exportSheet'),
+    text: document.getElementById('textSheet'),
+  };
+  function openSheet(name){
+    Object.values(sheets).forEach(s=>s.classList.remove('show'));
+    sheets[name].classList.add('show');
+    backdrop.classList.add('show');
+    // 画像調整 needs to compare against the actual photo while sliders move,
+    // so unlike other sheets, don't let the (otherwise invisible) backdrop
+    // swallow touches over the canvas — let pinch/pan reach it normally so
+    // the whole photo stays reachable even though the tab covers part of the
+    // screen. The tab has its own ✕ button for closing since tapping the
+    // photo itself no longer does that while this sheet is open.
+    backdrop.classList.toggle('passthrough', name==='adjust');
+  }
+  function closeSheets(){
+    Object.values(sheets).forEach(s=>s.classList.remove('show'));
+    backdrop.classList.remove('show');
+    backdrop.classList.remove('passthrough');
+  }
+  backdrop.addEventListener('click', closeSheets);
+  document.getElementById('adjustCloseBtn').addEventListener('click', closeSheets);
+  // Blur and the eraser each get their own dedicated settings tab (separate
+  // size/strength from the pen's ブラシ設定), so switching tools never means
+  // silently inheriting a size meant for a different tool. Eyedropper stays
+  // paired with the color tab.
+  function updateBrushBtnLabel(){
+    const label = document.querySelector('#brushToolBtn span');
+    if(!label) return;
+    label.textContent = state.tool==='blur' ? 'ぼかし設定' : state.tool==='smudge' ? 'なぞる設定' : state.tool==='eraser' ? '消しゴム設定' : 'ブラシ設定';
+  }
+  function targetSheetForTool(){
+    if(state.tool==='blur') return 'blur';
+    if(state.tool==='smudge') return 'smudge';
+    if(state.tool==='eraser') return 'eraser';
+    return 'brush';
+  }
+  document.getElementById('brushToolBtn').addEventListener('click', ()=>{ openSheet(targetSheetForTool()); updateBrushPreview(); updateBlurTargetLabel(); updateEraserPreview(); });
+  document.getElementById('colorToolBtn').addEventListener('click', ()=>openSheet('color'));
+  document.getElementById('layersHeaderBtn').addEventListener('click', ()=>{ renderLayerList(); openSheet('layers'); });
+  document.getElementById('adjustToolBtn').addEventListener('click', ()=>{ updateUpscaleLabel(); openSheet('adjust'); });
+
+
+  // ---------------- Brush live preview ----------------
+  // Shows a small sample stroke drawn with the *actual* brush pipeline
+  // (drawSegment + colorizeAndDraw), so size/opacity/softness/taper changes
+  // are immediately visible instead of the user having to guess and test on
+  // the real canvas.
+  function updateBrushPreview(){
+    const canvas = document.getElementById('brushPreviewCanvas');
+    if(!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0,0,W,H);
+
+    const scale = (H*0.5) / 120; // 120 = max value of the size slider
+    const w = Math.max(1, state.size*scale);
+    const n = 24;
+    const pts = [];
+    for(let i=0;i<=n;i++){
+      const t=i/n;
+      pts.push({ x: 14 + t*(W-28), y: H/2 + Math.sin(t*Math.PI*1.4)*(H*0.24) });
+    }
+    for(let i=0;i<pts.length;i++){
+      let widthMul = 1;
+      if(state.taperEnabled){
+        const cum = i/n, rem = 1-cum;
+        const inLen = state.taperIn/100, outLen = state.taperOut/100;
+        let f = 1;
+        if(inLen>0) f = Math.min(f, cum/inLen);
+        if(outLen>0) f = Math.min(f, rem/outLen);
+        widthMul = Math.max(0.06, Math.min(1, f));
+      }
+      pts[i]._w = Math.max(1, w*widthMul);
+    }
+    const scratch = document.createElement('canvas');
+    scratch.width = W; scratch.height = H;
+    const sctx = scratch.getContext('2d');
+    sctx.fillStyle = '#000';
+    for(let i=1;i<pts.length;i++){
+      drawSegment(sctx, pts[i-1].x, pts[i-1].y, pts[i].x, pts[i].y, pts[i-1]._w, pts[i]._w);
+    }
+    ctx.save();
+    ctx.globalAlpha = state.opacity/100;
+    colorizeAndDraw(ctx, scratch, state.color, state.brushType);
+    ctx.restore();
+  }
+
+  // brush sheet bindings
+  function bindRange(id, valId, key, suffix){
+    const el = document.getElementById(id), vl = document.getElementById(valId);
+    el.addEventListener('input', ()=>{ state[key] = +el.value; vl.textContent = el.value + (suffix||''); updateBrushPreview(); });
+  }
+  bindRange('sizeSlider','sizeVal','size','');
+  bindRange('opSlider','opVal','opacity','');
+  bindRange('softSlider','softVal','softness','');
+  bindRange('stabSlider','stabVal','stabilization','');
+  bindRange('taperInSlider','taperInVal','taperIn','%');
+  bindRange('taperOutSlider','taperOutVal','taperOut','%');
+  bindRange('blurSizeSlider','blurSizeVal','blurSize','');
+  bindRange('blurStrengthSlider','blurStrengthVal','blurStrength','');
+  bindRange('smudgeSizeSlider','smudgeSizeVal','smudgeSize','');
+  bindRange('smudgeStrengthSlider','smudgeStrengthVal','smudgeStrength','');
+  bindRange('glitterSizeSlider','glitterSizeVal','glitterSize','');
+  bindRange('glitterDensitySlider','glitterDensityVal','glitterDensity','');
+  function updateBlurPreview(){
+    const el = document.getElementById('blurSizePreview');
+    if(!el) return;
+    const shown = Math.min(96, Math.max(6, state.blurSize*0.4));
+    el.style.width = shown+'px';
+    el.style.height = shown+'px';
+  }
+  document.getElementById('blurSizeSlider').addEventListener('input', updateBlurPreview);
+  updateBlurPreview();
+  function updateSmudgePreview(){
+    const el = document.getElementById('smudgeSizePreview');
+    if(!el) return;
+    const shown = Math.min(96, Math.max(6, state.smudgeSize*0.4));
+    el.style.width = shown+'px';
+    el.style.height = shown+'px';
+  }
+  document.getElementById('smudgeSizeSlider').addEventListener('input', updateSmudgePreview);
+  updateSmudgePreview();
+
+  // Eraser: its own size/opacity, independent of the pen's — bound directly
+  // (not via bindRange, since that also refreshes the pen's ink brush preview,
+  // which isn't relevant here).
+  function updateEraserPreview(){
+    const el = document.getElementById('eraserSizePreview');
+    if(!el) return;
+    const shown = Math.min(96, Math.max(6, state.eraserSize*0.6));
+    el.style.width = shown+'px';
+    el.style.height = shown+'px';
+  }
+  const eraserSizeSlider = document.getElementById('eraserSizeSlider');
+  const eraserSizeVal = document.getElementById('eraserSizeVal');
+  eraserSizeSlider.addEventListener('input', ()=>{
+    state.eraserSize = +eraserSizeSlider.value;
+    eraserSizeVal.textContent = eraserSizeSlider.value;
+    updateEraserPreview();
+  });
+  const eraserOpSlider = document.getElementById('eraserOpSlider');
+  const eraserOpVal = document.getElementById('eraserOpVal');
+  eraserOpSlider.addEventListener('input', ()=>{
+    state.eraserOpacity = +eraserOpSlider.value;
+    eraserOpVal.textContent = eraserOpSlider.value;
+  });
+  updateEraserPreview();
+
+  function bindToggle(id, key){
+    const el = document.getElementById(id);
+    el.addEventListener('click', ()=>{
+      state[key] = !state[key];
+      el.classList.toggle('on', state[key]);
+      updateBrushPreview();
+    });
+  }
+  bindToggle('pressureTog','pressureEnabled');
+  bindToggle('taperTog','taperEnabled');
+
+  document.querySelectorAll('.btype').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      document.querySelectorAll('.btype').forEach(b=>b.classList.remove('sel'));
+      el.classList.add('sel');
+      state.brushType = el.dataset.btype;
+      document.getElementById('glitterControls').style.display = state.brushType==='glitter' ? 'block' : 'none';
+      if(state.brushType==='plain'){
+        // 普通のペン = flat width, no taper, no softness — a clean baseline pen
+        state.taperEnabled = false;
+        document.getElementById('taperTog').classList.remove('on');
+        state.softness = 0;
+        const softEl = document.getElementById('softSlider');
+        softEl.value = 0;
+        document.getElementById('softVal').textContent = '0';
+      }
+      updateBrushPreview();
+    });
+  });
+  updateBrushPreview();
+
+  // color sheet
+  const swatchGrid = document.getElementById('swatchGrid');
+  PALETTE.forEach(c=>{
+    const d = document.createElement('div');
+    d.className='swatch'; d.style.background=c; d.dataset.color=c;
+    if(c===state.color) d.classList.add('sel');
+    d.addEventListener('click', ()=>{
+      document.querySelectorAll('.swatch').forEach(s=>s.classList.remove('sel'));
+      d.classList.add('sel');
+      setColor(c);
+      syncPickerFromHex(c);
+    });
+    swatchGrid.appendChild(d);
+  });
+
+  // ---- Custom color picker: always-visible hue bar + saturation/value square,
+  // plus numeric HEX/RGB entry. Replaces the old native <input type=color>,
+  // which only ever showed a blank swatch until tapped and opened a separate
+  // OS-level dialog with no colors "laid out" up front. ----
+  function hexToRgb(hex){
+    hex = hex.replace('#','').trim();
+    if(hex.length===3) hex = hex.split('').map(c=>c+c).join('');
+    const n = parseInt(hex,16);
+    if(hex.length!==6 || isNaN(n)) return null;
+    return {r:(n>>16)&255, g:(n>>8)&255, b:n&255};
+  }
+  function rgbToHex(r,g,b){
+    return [r,g,b].map(v=>Math.round(Math.max(0,Math.min(255,v))).toString(16).padStart(2,'0')).join('');
+  }
+  function rgbToHsv(r,g,b){
+    r/=255; g/=255; b/=255;
+    const max=Math.max(r,g,b), min=Math.min(r,g,b), d=max-min;
+    let h=0;
+    if(d!==0){
+      if(max===r) h = ((g-b)/d)%6;
+      else if(max===g) h = (b-r)/d + 2;
+      else h = (r-g)/d + 4;
+      h *= 60; if(h<0) h += 360;
+    }
+    return {h, s: max===0?0:d/max, v:max};
+  }
+  function hsvToRgb(h,s,v){
+    const c = v*s, x = c*(1-Math.abs((h/60)%2-1)), m = v-c;
+    let r,g,b;
+    if(h<60){ r=c;g=x;b=0; } else if(h<120){ r=x;g=c;b=0; }
+    else if(h<180){ r=0;g=c;b=x; } else if(h<240){ r=0;g=x;b=c; }
+    else if(h<300){ r=x;g=0;b=c; } else { r=c;g=0;b=x; }
+    return {r:(r+m)*255, g:(g+m)*255, b:(b+m)*255};
+  }
+
+  const svCanvas = document.getElementById('svCanvas');
+  const svCtx = svCanvas.getContext('2d');
+  const svCursor = document.getElementById('svCursor');
+  const hueSlider = document.getElementById('hueSlider');
+  const hueThumb = document.getElementById('hueThumb');
+  const hexInput = document.getElementById('hexInput');
+  const rInput = document.getElementById('rInput');
+  const gInput = document.getElementById('gInput');
+  const bInput = document.getElementById('bInput');
+  const customPreviewSwatch = document.getElementById('customPreviewSwatch');
+  let picker = {h:30, s:0.7, v:0.17};
+
+  function drawSVCanvas(){
+    const w = svCanvas.width, h = svCanvas.height;
+    svCtx.fillStyle = `hsl(${picker.h},100%,50%)`;
+    svCtx.fillRect(0,0,w,h);
+    const whiteGrad = svCtx.createLinearGradient(0,0,w,0);
+    whiteGrad.addColorStop(0,'rgba(255,255,255,1)');
+    whiteGrad.addColorStop(1,'rgba(255,255,255,0)');
+    svCtx.fillStyle = whiteGrad; svCtx.fillRect(0,0,w,h);
+    const blackGrad = svCtx.createLinearGradient(0,0,0,h);
+    blackGrad.addColorStop(0,'rgba(0,0,0,0)');
+    blackGrad.addColorStop(1,'rgba(0,0,0,1)');
+    svCtx.fillStyle = blackGrad; svCtx.fillRect(0,0,w,h);
+  }
+  function positionHandles(){
+    svCursor.style.left = (picker.s*100)+'%';
+    svCursor.style.top = ((1-picker.v)*100)+'%';
+    hueThumb.style.left = (picker.h/360*100)+'%';
+  }
+  function updateNumericFromPicker(){
+    const {r,g,b} = hsvToRgb(picker.h, picker.s, picker.v);
+    const hex = rgbToHex(r,g,b);
+    hexInput.value = hex;
+    rInput.value = Math.round(r); gInput.value = Math.round(g); bInput.value = Math.round(b);
+    customPreviewSwatch.style.background = '#'+hex;
+    return hex;
+  }
+  function applyPicker(){
+    drawSVCanvas();
+    positionHandles();
+    const hex = updateNumericFromPicker();
+    document.querySelectorAll('.swatch').forEach(s=>s.classList.remove('sel'));
+    setColor('#'+hex);
+  }
+  // Re-derives the hue/sat/value square + hue bar position from any hex color
+  // (used when a preset swatch is tapped, or a valid hex/RGB is typed in).
+  function syncPickerFromHex(hex){
+    const rgb = hexToRgb(hex); if(!rgb) return;
+    const hsv = rgbToHsv(rgb.r, rgb.g, rgb.b);
+    picker.h = hsv.h; picker.s = hsv.s; picker.v = hsv.v;
+    drawSVCanvas(); positionHandles();
+    hexInput.value = hex.replace('#','');
+    rInput.value = rgb.r; gInput.value = rgb.g; bInput.value = rgb.b;
+    customPreviewSwatch.style.background = hex;
+    hueSlider.value = Math.round(hsv.h);
+  }
+
+  function svPointFromEvent(e){
+    const rect = svCanvas.getBoundingClientRect();
+    const x = Math.max(0, Math.min(1, (e.clientX-rect.left)/rect.width));
+    const y = Math.max(0, Math.min(1, (e.clientY-rect.top)/rect.height));
+    return {s:x, v:1-y};
+  }
+  let svDragging = false;
+  svCanvas.addEventListener('pointerdown', e=>{ svDragging=true; svCanvas.setPointerCapture(e.pointerId); const p=svPointFromEvent(e); picker.s=p.s; picker.v=p.v; applyPicker(); });
+  svCanvas.addEventListener('pointermove', e=>{ if(!svDragging) return; const p=svPointFromEvent(e); picker.s=p.s; picker.v=p.v; applyPicker(); });
+  svCanvas.addEventListener('pointerup', e=>{ svDragging=false; });
+  svCanvas.addEventListener('pointercancel', ()=>{ svDragging=false; });
+
+  hueSlider.addEventListener('input', ()=>{ picker.h = +hueSlider.value; applyPicker(); });
+
+  hexInput.addEventListener('change', ()=>{
+    const clean = hexInput.value.replace('#','').trim();
+    const rgb = hexToRgb(clean);
+    if(!rgb){ updateNumericFromPicker(); return; } // invalid entry — revert to current color
+    syncPickerFromHex('#'+clean);
+    setColor('#'+clean);
+    document.querySelectorAll('.swatch').forEach(s=>s.classList.remove('sel'));
+  });
+  [rInput,gInput,bInput].forEach(inp=>{
+    inp.addEventListener('change', ()=>{
+      const r = Math.max(0,Math.min(255, +rInput.value||0));
+      const g = Math.max(0,Math.min(255, +gInput.value||0));
+      const b = Math.max(0,Math.min(255, +bInput.value||0));
+      rInput.value=r; gInput.value=g; bInput.value=b;
+      const hex = rgbToHex(r,g,b);
+      syncPickerFromHex('#'+hex);
+      setColor('#'+hex);
+      document.querySelectorAll('.swatch').forEach(s=>s.classList.remove('sel'));
+    });
+  });
+
+  function setColor(c){
+    state.color = c;
+    document.getElementById('colorPreview').style.background = c;
+    updateBrushPreview();
+  }
+  setColor(state.color);
+  syncPickerFromHex(state.color);
+
+  // ---------------- Layers UI ----------------
+  function refreshLayerThumb(layer){
+    layer._thumbDirty = true;
+    syncBlendGhost(layer);
+    if(sheets.layers.classList.contains('show')) renderLayerList();
+  }
+
+  // ---------------- Layer merging (統合) ----------------
+  // Merges one drawing/collage layer's pixels into the layer directly below it
+  // (or into the base photo, if it's already the bottom-most layer), then
+  // removes it. Like layer deletion, removing a layer isn't tracked in the undo
+  // stack, so this is flagged to the user as irreversible.
+  function mergeLayerIntoPhoto(layer){
+    const before = photoCtx.getImageData(0,0,photoCanvas.width,photoCanvas.height);
+    const hasBlend = layer.blendMode && layer.blendMode!=='normal';
+    const amt = Math.max(0, Math.min(100, layer.blendAmount==null?100:layer.blendAmount))/100;
+    const partial = hasBlend && amt<0.999;
+    photoCtx.save();
+    if(partial){
+      photoCtx.globalAlpha = layer.opacity;
+      photoCtx.globalCompositeOperation = 'source-over';
+      photoCtx.drawImage(layer.canvas,0,0);
+    }
+    photoCtx.globalAlpha = partial ? layer.opacity*amt : layer.opacity;
+    photoCtx.globalCompositeOperation = hasBlend ? layer.blendMode : 'source-over';
+    photoCtx.drawImage(layer.canvas,0,0);
+    photoCtx.restore();
+    pushHistory({id:PHOTO_ID}, before);
+    renderAdjustCanvas();
+    world.removeChild(layer.canvas);
+    if(layer.ghostCanvas) world.removeChild(layer.ghostCanvas);
+    layers = layers.filter(l=>l.id!==layer.id);
+    if(state.activeLayerId===layer.id) state.activeLayerId = PHOTO_ID;
+    renderLayerList();
+    updateBlurTargetLabel();
+    showToast('元画像に統合しました');
+  }
+  function mergeLayerDown(layer){
+    const idx = layers.findIndex(l=>l.id===layer.id);
+    if(idx<0) return;
+    if(idx===0){ mergeLayerIntoPhoto(layer); return; }
+    const below = layers[idx-1];
+    const hasBlend = layer.blendMode && layer.blendMode!=='normal';
+    const amt = Math.max(0, Math.min(100, layer.blendAmount==null?100:layer.blendAmount))/100;
+    const partial = hasBlend && amt<0.999;
+    below.ctx.save();
+    if(partial){
+      below.ctx.globalAlpha = layer.opacity;
+      below.ctx.globalCompositeOperation = 'source-over';
+      below.ctx.drawImage(layer.canvas,0,0);
+    }
+    below.ctx.globalAlpha = partial ? layer.opacity*amt : layer.opacity;
+    below.ctx.globalCompositeOperation = hasBlend ? layer.blendMode : 'source-over';
+    below.ctx.drawImage(layer.canvas,0,0);
+    below.ctx.restore();
+    world.removeChild(layer.canvas);
+    if(layer.ghostCanvas) world.removeChild(layer.ghostCanvas);
+    layers = layers.filter(l=>l.id!==layer.id);
+    if(state.activeLayerId===layer.id) state.activeLayerId = below.id;
+    refreshLayerThumb(below);
+    renderLayerList();
+    updateBlurTargetLabel();
+    showToast('「'+below.name+'」に統合しました');
+  }
+  function flattenAllLayers(){
+    if(!layers.length){ showToast('統合するレイヤーがありません'); return; }
+    const before = photoCtx.getImageData(0,0,photoCanvas.width,photoCanvas.height);
+    layers.forEach(l=>{
+      if(!l.visible || l.opacity<=0) return;
+      const hasBlend = l.blendMode && l.blendMode!=='normal';
+      const amt = Math.max(0, Math.min(100, l.blendAmount==null?100:l.blendAmount))/100;
+      const partial = hasBlend && amt<0.999;
+      photoCtx.save();
+      if(partial){
+        photoCtx.globalAlpha = l.opacity;
+        photoCtx.globalCompositeOperation = 'source-over';
+        photoCtx.drawImage(l.canvas,0,0);
+      }
+      photoCtx.globalAlpha = partial ? l.opacity*amt : l.opacity;
+      photoCtx.globalCompositeOperation = hasBlend ? l.blendMode : 'source-over';
+      photoCtx.drawImage(l.canvas,0,0);
+      photoCtx.restore();
+    });
+    pushHistory({id:PHOTO_ID}, before);
+    renderAdjustCanvas();
+    layers.forEach(l=>{ world.removeChild(l.canvas); if(l.ghostCanvas) world.removeChild(l.ghostCanvas); });
+    layers = [];
+    addLayer('加筆レイヤー'+layerSeq, true);
+    renderLayerList();
+    updateBlurTargetLabel();
+    showToast('すべてのレイヤーを統合しました');
+  }
+  document.getElementById('flattenAllBtn').addEventListener('click', ()=>{
+    if(!state.imgW){ showToast('先に写真を読み込んでね'); return; }
+    flattenAllLayers();
+  });
+
+  function renderLayerList(){
+    const list = document.getElementById('layerList');
+    list.innerHTML='';
+    for(let i=layers.length-1;i>=0;i--){
+      const layer = layers[i];
+      const row = document.createElement('div');
+      row.className = 'layerItem' + (layer.id===state.activeLayerId?' active':'');
+      const thumb = document.createElement('img');
+      thumb.className='layerThumb';
+      thumb.src = layer.canvas.toDataURL();
+      row.appendChild(thumb);
+
+      const info = document.createElement('div'); info.className='layerInfo';
+      const nm = document.createElement('div'); nm.className='lname'; nm.textContent = layer.name;
+      const opRow = document.createElement('div'); opRow.className='lop';
+      const opInput = document.createElement('input'); opInput.type='range'; opInput.min=0; opInput.max=100; opInput.value=Math.round(layer.opacity*100);
+      opInput.addEventListener('input', ()=>{ layer.opacity = opInput.value/100; applyLayerStyle(layer); });
+      opRow.appendChild(opInput);
+      info.appendChild(nm); info.appendChild(opRow);
+
+      const blendSelect = document.createElement('select');
+      blendSelect.className = 'blendSelect';
+      BLEND_MODES.forEach(([val,label])=>{
+        const opt = document.createElement('option');
+        opt.value = val; opt.textContent = label;
+        if((layer.blendMode||'normal')===val) opt.selected = true;
+        blendSelect.appendChild(opt);
+      });
+      blendSelect.addEventListener('change', ()=>{
+        layer.blendMode = blendSelect.value;
+        applyLayerStyle(layer);
+        blendAmountRow.style.display = layer.blendMode!=='normal' ? 'flex' : 'none';
+      });
+      blendSelect.addEventListener('click', ev=>ev.stopPropagation());
+      info.appendChild(blendSelect);
+
+      // CSSのブレンドモード自体には「強さ」という概念が無いため、0のときは
+      // 効果なし、100で普通にブレンドモードをかけた状態と同じになるよう、
+      // ゴーストレイヤーで疑似的に強さを再現している（syncBlendGhost参照）。
+      const blendAmountRow = document.createElement('div'); blendAmountRow.className='lop';
+      blendAmountRow.style.display = (layer.blendMode && layer.blendMode!=='normal') ? 'flex' : 'none';
+      const blendAmountLabel = document.createElement('span');
+      blendAmountLabel.textContent='効果の量'; blendAmountLabel.style.cssText='font-size:9.5px;color:var(--text-dim);flex:none;width:44px;';
+      const blendAmountInput = document.createElement('input');
+      blendAmountInput.type='range'; blendAmountInput.min=0; blendAmountInput.max=100;
+      blendAmountInput.value = layer.blendAmount==null ? 100 : layer.blendAmount;
+      blendAmountInput.addEventListener('input', ()=>{ layer.blendAmount = +blendAmountInput.value; syncBlendGhost(layer); });
+      blendAmountInput.addEventListener('click', ev=>ev.stopPropagation());
+      blendAmountRow.appendChild(blendAmountLabel); blendAmountRow.appendChild(blendAmountInput);
+      info.appendChild(blendAmountRow);
+
+      if(layer.type==='image'){
+        // シームレス itself now lives as one あり/なし toggle up in the
+        // レイアウト row, computed fresh from the whole collage's geometry
+        // every time — that's what keeps it from going stale. This just
+        // shows the per-photo status (read-only) so it's clear at a glance
+        // whether THIS photo currently has any feathered edges.
+        if(layer.seamless && layer.seamless.amount>0){
+          const edges = ['top','bottom','left','right'].filter(k=>layer.seamless[k]).map(k=>({top:'上',bottom:'下',left:'左',right:'右'}[k]));
+          const seamStatus = document.createElement('div');
+          seamStatus.style.cssText='font-size:9.5px;color:var(--gold);margin-top:3px;';
+          seamStatus.textContent = edges.length ? `シームレス: ${edges.join('・')}の境目` : 'シームレス: 対象の境目なし';
+          info.appendChild(seamStatus);
+        }
+
+        const cropBtnRow = document.createElement('div'); cropBtnRow.style.cssText='margin-top:4px;';
+        const cropBtn = document.createElement('button');
+        cropBtn.textContent = '✂️ 切り抜き';
+        cropBtn.style.cssText = 'font-size:10px;padding:4px 10px;border-radius:10px;border:1px solid var(--line);background:var(--bg-sheet);color:var(--text-dim);';
+        cropBtn.addEventListener('click', (ev)=>{ ev.stopPropagation(); enterCropMode(layer); });
+        cropBtnRow.appendChild(cropBtn);
+        info.appendChild(cropBtnRow);
+      }
+      if(layer.type==='text'){
+        const preview = document.createElement('div');
+        preview.style.cssText = `font-size:12px;color:${layer.textStyle.color};margin-top:3px;font-family:${layer.textStyle.font};background:rgba(0,0,0,.25);padding:3px 8px;border-radius:6px;display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;`;
+        preview.textContent = layer.textContent || '(空)';
+        info.appendChild(preview);
+
+        const editBtnRow = document.createElement('div'); editBtnRow.style.cssText='margin-top:4px;';
+        const editBtn = document.createElement('button');
+        editBtn.textContent = '✏️ 編集';
+        editBtn.style.cssText = 'font-size:10px;padding:4px 10px;border-radius:10px;border:1px solid var(--line);background:var(--bg-sheet);color:var(--text-dim);';
+        editBtn.addEventListener('click', (ev)=>{ ev.stopPropagation(); openTextEditor(layer); });
+        editBtnRow.appendChild(editBtn);
+        info.appendChild(editBtnRow);
+      }
+      row.appendChild(info);
+
+      const btns = document.createElement('div'); btns.className='layerBtns';
+      const visBtn = document.createElement('button'); visBtn.className='miniBtn'; visBtn.textContent = layer.visible?'👁':'—';
+      visBtn.addEventListener('click', ()=>{ layer.visible=!layer.visible; applyLayerStyle(layer); visBtn.textContent = layer.visible?'👁':'—'; });
+      const mergeBtn = document.createElement('button'); mergeBtn.className='miniBtn merge'; mergeBtn.textContent='⬇';
+      mergeBtn.title = i===0 ? '元画像に統合' : '1つ下のレイヤーに統合';
+      mergeBtn.addEventListener('click', ()=> mergeLayerDown(layer));
+      const clearBtn = document.createElement('button'); clearBtn.className='miniBtn'; clearBtn.textContent='🧹';
+      clearBtn.title = 'このレイヤーの中身を消す（レイヤー自体は残ります）';
+      clearBtn.addEventListener('click', ()=>{
+        const before = layer.ctx.getImageData(0,0,layer.canvas.width, layer.canvas.height);
+        layer.ctx.clearRect(0,0,layer.canvas.width, layer.canvas.height);
+        pushHistory(layer, before);
+        refreshLayerThumb(layer);
+        renderLayerList();
+      });
+      const delBtn = document.createElement('button'); delBtn.className='miniBtn danger'; delBtn.textContent='🗑';
+      delBtn.addEventListener('click', ()=>{
+        if(layers.length<=1){ showToast('最後のレイヤーは削除できません'); return; }
+        world.removeChild(layer.canvas);
+        if(layer.ghostCanvas) world.removeChild(layer.ghostCanvas);
+        layers = layers.filter(l=>l.id!==layer.id);
+        if(state.activeLayerId===layer.id) state.activeLayerId = layers[layers.length-1].id;
+        // If a レイアウト is active, just recompute it for however many
+        // photos are left — positions AND シームレス boundaries — instead of
+        // leaving the survivors with stale slot/edge data from the old photo
+        // count (which is what used to cause 境目 to be wrong after a delete).
+        reapplyCollageIfActive();
+        if(layers.filter(l=>l.type==='image').length<2) clearCollageGuide();
+        renderLayerList();
+      });
+      btns.appendChild(visBtn); btns.appendChild(mergeBtn); btns.appendChild(clearBtn); btns.appendChild(delBtn);
+      row.appendChild(btns);
+
+      row.addEventListener('click', (ev)=>{
+        if(ev.target===opInput || ev.target===visBtn || ev.target===mergeBtn || ev.target===clearBtn || ev.target===delBtn || ev.target===blendSelect) return;
+        state.activeLayerId = layer.id;
+        renderLayerList();
+        updateBlurTargetLabel();
+      });
+      list.appendChild(row);
+    }
+
+    // The base photo itself, shown as its own row at the very bottom (it sits
+    // below every drawing/collage layer). It CAN be selected as a "draw here"
+    // target just like any other layer — so pen/消しゴム/ぼかし can work directly
+    // on the original photo when you want that — and toggling it on/off lets you
+    // clearly see what's part of the original photo vs. what's on layers above it.
+    if(photoCanvas){
+      const row = document.createElement('div');
+      row.className = 'layerItem' + (state.activeLayerId===PHOTO_ID ? ' active' : '');
+      const thumb = document.createElement('img');
+      thumb.className='layerThumb';
+      thumb.src = (adjustCanvas||photoCanvas).toDataURL();
+      row.appendChild(thumb);
+
+      const info = document.createElement('div'); info.className='layerInfo';
+      const nm = document.createElement('div'); nm.className='lname'; nm.textContent = '元画像（ベース）';
+      const opRow = document.createElement('div'); opRow.className='lop';
+      const opInput = document.createElement('input'); opInput.type='range'; opInput.min=0; opInput.max=100; opInput.value=Math.round(photoOpacity*100);
+      opInput.addEventListener('input', ()=>{ photoOpacity = opInput.value/100; if(adjustCanvas) adjustCanvas.style.opacity = photoOpacity; });
+      opRow.appendChild(opInput);
+      info.appendChild(nm); info.appendChild(opRow);
+      row.appendChild(info);
+
+      const btns = document.createElement('div'); btns.className='layerBtns';
+      const visBtn = document.createElement('button'); visBtn.className='miniBtn'; visBtn.textContent = photoVisible?'👁':'—';
+      visBtn.title = 'オフにすると加筆・ぼかしが乗っていない元の写真だけを隠せます（比較用）';
+      visBtn.addEventListener('click', ()=>{
+        photoVisible = !photoVisible;
+        if(adjustCanvas) adjustCanvas.style.display = photoVisible ? 'block' : 'none';
+        visBtn.textContent = photoVisible?'👁':'—';
+      });
+      btns.appendChild(visBtn);
+      row.appendChild(btns);
+
+      row.addEventListener('click', (ev)=>{
+        if(ev.target===opInput || ev.target===visBtn) return;
+        state.activeLayerId = PHOTO_ID;
+        renderLayerList();
+        updateBlurTargetLabel();
+      });
+      list.appendChild(row);
+    }
+  }
+
+  // Reflects the currently selected draw target's name in the ぼかし設定 sheet,
+  // so it's always obvious whether ぼかし is about to affect the photo or a
+  // specific 加筆レイヤー — this is the main thing that made blur feel like it
+  // was "leaking" onto the wrong layer before.
+  function updateBlurTargetLabel(){
+    const t = getActiveLayer();
+    const label = t ? (t.isPhoto ? '元画像（ベース）' : t.name) : '-';
+    const el = document.getElementById('blurTargetLabel');
+    if(el) el.textContent = label;
+    const el2 = document.getElementById('smudgeTargetLabel');
+    if(el2) el2.textContent = label;
+  }
+  document.getElementById('addLayerBtn').addEventListener('click', ()=>{
+    if(!state.imgW){ showToast('先に写真を読み込んでね'); return; }
+    const l = addLayer('加筆レイヤー'+layerSeq, true);
+    renderLayerList();
+    showToast('レイヤーを追加しました');
+  });
+
+  document.querySelectorAll('#collageLayoutRow .presetChip').forEach(chip=>{
+    chip.addEventListener('click', ()=> arrangeCollage(chip.dataset.layout));
+  });
+
+  const collageSeamOnBtn = document.getElementById('collageSeamOnBtn');
+  const collageSeamOffBtn = document.getElementById('collageSeamOffBtn');
+  const collageSeamHint = document.getElementById('collageSeamHint');
+  const collageSeamAmountRow = document.getElementById('collageSeamAmountRow');
+  const collageSeamAmountSlider = document.getElementById('collageSeamAmountSlider');
+  const collageSeamAmountVal = document.getElementById('collageSeamAmountVal');
+  function setCollageSeamless(on){
+    state.collageSeamless = on;
+    collageSeamOnBtn.classList.toggle('sel', on);
+    collageSeamOffBtn.classList.toggle('sel', !on);
+    collageSeamHint.style.display = on ? 'block' : 'none';
+    collageSeamAmountRow.style.display = on ? 'flex' : 'none';
+    if(state.collageMode){
+      // Turning シームレス on/off changes how far each photo needs to
+      // physically extend past its slot (the overlap), not just the fade
+      // amount — so this needs a full re-arrange, not just re-tagging edges.
+      arrangeCollage(state.collageMode);
+    }
+  }
+  collageSeamOnBtn.addEventListener('click', ()=> setCollageSeamless(true));
+  collageSeamOffBtn.addEventListener('click', ()=> setCollageSeamless(false));
+  collageSeamAmountSlider.addEventListener('input', ()=>{
+    state.collageSeamAmount = +collageSeamAmountSlider.value;
+    collageSeamAmountVal.textContent = collageSeamAmountSlider.value;
+    // The overlap width itself changed, so — same as toggling on/off — this
+    // needs a full re-arrange to actually extend/shrink each photo into the
+    // new overlap band, not just retint the fade.
+    if(state.collageMode && state.collageSeamless) arrangeCollage(state.collageMode);
+  });
+
+  const collageGuideOnBtn = document.getElementById('collageGuideOnBtn');
+  const collageGuideOffBtn = document.getElementById('collageGuideOffBtn');
+  collageGuideOnBtn.addEventListener('click', ()=>{
+    collageGuideOnBtn.classList.add('sel'); collageGuideOffBtn.classList.remove('sel');
+    if(collageGuideCanvas) collageGuideCanvas.style.display = '';
+  });
+  collageGuideOffBtn.addEventListener('click', ()=>{
+    collageGuideOffBtn.classList.add('sel'); collageGuideOnBtn.classList.remove('sel');
+    if(collageGuideCanvas) collageGuideCanvas.style.display = 'none';
+  });
+
+  // ---------------- Text layer sheet wiring ----------------
+  let textEditingLayer = null; // the layer currently being edited, or null when adding a new one
+  const textContentInput = document.getElementById('textContentInput');
+  textContentInput.addEventListener('focus', ()=> textContentInput.select());
+  const textSizeSlider = document.getElementById('textSizeSlider');
+  const textSizeVal = document.getElementById('textSizeVal');
+  const textHexInput = document.getElementById('textHexInput');
+  const textColorPreview = document.getElementById('textColorPreview');
+  const textApplyBtn = document.getElementById('textApplyBtn');
+  const textDeleteBtn = document.getElementById('textDeleteBtn');
+  let selectedTextFont = "'M PLUS Rounded 1c', sans-serif";
+  let selectedTextColor = '#ffffff';
+
+  const textColorSwatchGrid = document.getElementById('textColorSwatchGrid');
+  ['#ffffff','#000000', ...PALETTE].forEach(c=>{
+    const d = document.createElement('div');
+    d.className='swatch'; d.style.background=c; d.dataset.color=c;
+    d.addEventListener('click', ()=>{
+      document.querySelectorAll('#textColorSwatchGrid .swatch').forEach(s=>s.classList.remove('sel'));
+      d.classList.add('sel');
+      setTextColor(c);
+    });
+    textColorSwatchGrid.appendChild(d);
+  });
+  function setTextColor(hex){
+    selectedTextColor = hex;
+    textColorPreview.style.background = hex;
+    textHexInput.value = hex.replace('#','');
+  }
+  textHexInput.addEventListener('input', ()=>{
+    const v = textHexInput.value.replace(/[^0-9a-fA-F]/g,'').slice(0,6);
+    if(v.length===6) setTextColor('#'+v);
+  });
+
+  document.querySelectorAll('#textFontRow .presetChip').forEach(chip=>{
+    chip.addEventListener('click', ()=>{
+      document.querySelectorAll('#textFontRow .presetChip').forEach(c=>c.classList.remove('sel'));
+      chip.classList.add('sel');
+      selectedTextFont = chip.dataset.font;
+    });
+  });
+  textSizeSlider.addEventListener('input', ()=>{ textSizeVal.textContent = textSizeSlider.value; });
+
+  // Opens the sheet pre-filled either for a brand new text layer (layer=null)
+  // or to edit an existing one — same sheet, same fields, just seeded
+  // differently and the ✂️-style Apply button relabels itself accordingly.
+  function openTextEditor(layer){
+    textEditingLayer = layer;
+    if(layer){
+      textContentInput.value = layer.textContent;
+      textSizeSlider.value = layer.textStyle.size; textSizeVal.textContent = layer.textStyle.size;
+      selectedTextFont = layer.textStyle.font;
+      setTextColor(layer.textStyle.color);
+      textApplyBtn.textContent = '更新する';
+      textDeleteBtn.style.display = 'block';
+    } else {
+      // Pre-filled as an actual value (not just a placeholder) — © isn't
+      // easy to type on most mobile keyboards, so starting with a ready-to-
+      // use example that can just be edited/replaced is much friendlier than
+      // making everyone type the symbol themselves.
+      textContentInput.value = '© SQUARE ENIX';
+      textSizeSlider.value = 60; textSizeVal.textContent = '60';
+      selectedTextFont = "'Cinzel', serif";
+      setTextColor('#ffffff');
+      textApplyBtn.textContent = '追加する';
+      textDeleteBtn.style.display = 'none';
+    }
+    document.querySelectorAll('#textFontRow .presetChip').forEach(c=>{
+      c.classList.toggle('sel', c.dataset.font===selectedTextFont);
+    });
+    document.querySelectorAll('#textColorSwatchGrid .swatch').forEach(s=>{
+      s.classList.toggle('sel', s.dataset.color===selectedTextColor);
+    });
+    openSheet('text');
+  }
+  document.getElementById('addTextLayerBtn').addEventListener('click', ()=>{
+    if(!state.imgW){ showToast('先に写真を読み込んでね'); return; }
+    openTextEditor(null);
+  });
+  textApplyBtn.addEventListener('click', ()=>{
+    const text = textContentInput.value;
+    if(!text.trim()){ showToast('文字を入力してね'); return; }
+    const style = { font: selectedTextFont, size: +textSizeSlider.value, color: selectedTextColor };
+    if(textEditingLayer){
+      textEditingLayer.textContent = text;
+      textEditingLayer.textStyle = style;
+      redrawTextLayer(textEditingLayer);
+      renderLayerList();
+    } else {
+      const layer = addTextLayer(text, style);
+      if(layer){
+        state.tool = 'imgmove';
+        document.querySelectorAll('.tool[data-tool]').forEach(b=>b.classList.remove('active'));
+        const btn = document.querySelector('.tool[data-tool="imgmove"]');
+        if(btn) btn.classList.add('active');
+        updateBrushBtnLabel();
+      }
+    }
+    closeSheets();
+  });
+  textDeleteBtn.addEventListener('click', ()=>{
+    if(!textEditingLayer) return;
+    if(layers.length<=1){ showToast('最後のレイヤーは削除できません'); return; }
+    world.removeChild(textEditingLayer.canvas);
+    if(textEditingLayer.ghostCanvas) world.removeChild(textEditingLayer.ghostCanvas);
+    layers = layers.filter(l=>l.id!==textEditingLayer.id);
+    if(state.activeLayerId===textEditingLayer.id) state.activeLayerId = layers[layers.length-1].id;
+    renderLayerList();
+    closeSheets();
+  });
+
+  document.getElementById('addImageLayerBtn').addEventListener('click', ()=>{
+    if(!state.imgW){ showToast('先に写真を読み込んでね'); return; }
+    document.getElementById('collageFileInput').click();
+  });
+  document.getElementById('collageFileInput').addEventListener('change', e=>{
+    const files = Array.from(e.target.files||[]);
+    if(files.length){
+      // Load every picked file, then reflow ONCE at the end — reflowing
+      // after each individual photo would repeatedly reset everyone else's
+      // position/scale mid-way through, and briefly show an in-between,
+      // uneven layout.
+      let remaining = files.length;
+      files.forEach(file=>{
+        const reader = new FileReader();
+        reader.onload = ev=>{
+          const img = new Image();
+          img.onload = ()=>{
+            addImageLayer(img);
+            remaining--;
+            if(remaining<=0){ reapplyCollageIfActive(); renderLayerList(); }
+          };
+          img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+      // Keep the sheet open — the next steps (並べ方/シームレス) are right
+      // here, and closing used to hide them right when they're needed.
+    }
+    e.target.value = '';
+  });
+
+  // ---------------- Export (with optional resolution upscale) ----------------
+  // Flattens photo + vignette + every visible layer at native resolution,
+  // THEN applies 画像調整 to that flattened result. This has to be a separate,
+  // explicit step here: world.style.filter (in applyAdjustments) only ever
+  // affects the live on-screen DOM rendering — canvas drawImage calls read
+  // each source canvas's raw pixels and are completely blind to CSS filters
+  // applied to those elements. Without reapplying the same filter string
+  // here, the on-screen preview would show 画像調整 correctly while the
+  // actually-saved file silently left it out.
+  function composeFinalCanvas(){
+    renderAdjustCanvas();
+    const out = document.createElement('canvas');
+    out.width = state.imgW; out.height = state.imgH;
+    const octx = out.getContext('2d');
+    octx.drawImage(adjustCanvas,0,0);
+    octx.drawImage(vignetteCanvas,0,0);
+    layers.forEach(l=>{
+      if(!l.visible) return;
+      const hasBlend = l.blendMode && l.blendMode!=='normal';
+      const amt = Math.max(0, Math.min(100, l.blendAmount==null?100:l.blendAmount))/100;
+      const partial = hasBlend && amt<0.999;
+      // Same two-pass idea as the on-screen ghost canvas: a plain full-
+      // opacity normal-mode pass, then the blend-mode pass on top at only
+      // `amt` of the layer's opacity — so a partial 効果の量 exports exactly
+      // like it previews, not always at full blend strength.
+      if(partial){
+        octx.globalAlpha = l.opacity;
+        octx.globalCompositeOperation = 'source-over';
+        octx.drawImage(l.canvas,0,0);
+      }
+      octx.globalAlpha = partial ? l.opacity*amt : l.opacity;
+      octx.globalCompositeOperation = hasBlend ? l.blendMode : 'source-over';
+      octx.drawImage(l.canvas,0,0);
+    });
+    octx.globalAlpha=1;
+    octx.globalCompositeOperation='source-over';
+    if(isAdjustNeutral()) return out;
+    const filtered = document.createElement('canvas');
+    filtered.width = state.imgW; filtered.height = state.imgH;
+    const fctx = filtered.getContext('2d');
+    fctx.filter = buildFilterString();
+    fctx.drawImage(out,0,0);
+    fctx.filter = 'none';
+    return filtered;
+  }
+  function clampByte(v){ return v<0?0:v>255?255:v; }
+  // A light unsharp-mask pass (sharpen = original + amount*(original-blurred)),
+  // applied only when the export is upscaled — plain resampling alone looks soft,
+  // so this restores perceived detail/crispness at the new, larger pixel size.
+  function sharpenCanvas(canvas, amount, radius){
+    const w = canvas.width, h = canvas.height;
+    const ctx = canvas.getContext('2d');
+    const src = ctx.getImageData(0,0,w,h);
+    const blurredCanvas = document.createElement('canvas');
+    blurredCanvas.width = w; blurredCanvas.height = h;
+    const bctx = blurredCanvas.getContext('2d');
+    bctx.filter = `blur(${radius}px)`;
+    bctx.drawImage(canvas,0,0);
+    bctx.filter = 'none';
+    const blurred = bctx.getImageData(0,0,w,h);
+    const sd = src.data, bd = blurred.data;
+    for(let i=0;i<sd.length;i+=4){
+      sd[i]   = clampByte(sd[i]   + (sd[i]  -bd[i])  *amount);
+      sd[i+1] = clampByte(sd[i+1] + (sd[i+1]-bd[i+1])*amount);
+      sd[i+2] = clampByte(sd[i+2] + (sd[i+2]-bd[i+2])*amount);
+    }
+    ctx.putImageData(src,0,0);
+  }
+  const MAX_EXPORT_DIM = 4200; // keeps upscale processing time/memory reasonable on phones
+  let exportScale = 1;
+  function updateExportSizeLabel(){
+    const label = document.getElementById('exportSizeLabel');
+    if(!label || !state.imgW) return;
+    let w = Math.round(state.imgW*exportScale), h = Math.round(state.imgH*exportScale);
+    if(Math.max(w,h) > MAX_EXPORT_DIM){
+      const r = MAX_EXPORT_DIM/Math.max(w,h);
+      w = Math.round(w*r); h = Math.round(h*r);
+      label.textContent = `${w} × ${h} px（最大サイズの都合で少し縮小されます）`;
+    } else {
+      label.textContent = `${w} × ${h} px`;
+    }
+  }
+  document.querySelectorAll('#exportScaleRow .presetChip').forEach(chip=>{
+    chip.addEventListener('click', ()=>{
+      document.querySelectorAll('#exportScaleRow .presetChip').forEach(c=>c.classList.remove('sel'));
+      chip.classList.add('sel');
+      exportScale = +chip.dataset.scale;
+      updateExportSizeLabel();
+    });
+  });
+  document.getElementById('exportBtn').addEventListener('click', ()=>{
+    if(!state.imgW){ showToast('先に写真を読み込んでね'); return; }
+    updateExportSizeLabel();
+    openSheet('export');
+  });
+  document.getElementById('doExportBtn').addEventListener('click', (ev)=>{
+    if(!state.imgW) return;
+    const btn = ev.currentTarget;
+    btn.disabled = true; btn.textContent = '処理中…';
+    showToast(exportScale>1 ? '高解像度で書き出し中…少し待ってね' : '保存中…');
+    // Let the toast/button state actually paint before the heavy synchronous work.
+    setTimeout(()=>{
+      let out = composeFinalCanvas();
+      if(exportScale>1){
+        let targetW = Math.round(state.imgW*exportScale), targetH = Math.round(state.imgH*exportScale);
+        if(Math.max(targetW,targetH) > MAX_EXPORT_DIM){
+          const r = MAX_EXPORT_DIM/Math.max(targetW,targetH);
+          targetW = Math.round(targetW*r); targetH = Math.round(targetH*r);
+        }
+        const up = document.createElement('canvas');
+        up.width = targetW; up.height = targetH;
+        const uctx = up.getContext('2d');
+        uctx.imageSmoothingEnabled = true;
+        uctx.imageSmoothingQuality = 'high';
+        uctx.drawImage(out, 0, 0, targetW, targetH);
+        sharpenCanvas(up, 0.35, 1.1);
+        out = up;
+      }
+      out.toBlob(blob=>{
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'kahitsu_' + Date.now() + '.png';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        showToast('保存しました ✨');
+        btn.disabled = false; btn.textContent = 'この設定で保存する';
+        closeSheets();
+      }, 'image/png');
+    }, 30);
+  });
+
+  // Prevent page scroll/bounce & double-tap zoom
+  document.addEventListener('touchmove', e=>{ if(e.target.closest('#stageWrap')) e.preventDefault(); }, {passive:false});
+  document.addEventListener('gesturestart', e=>e.preventDefault());
+
+})();
+</script>
+</body>
+</html>
