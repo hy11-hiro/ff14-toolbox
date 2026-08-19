@@ -313,9 +313,41 @@
   #toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
 
   input[type=file]{ display:none; }
+
+  /* ---------- DESKTOP / WIDE-SCREEN SHEET LAYOUT ----------
+     On a large PC window the sheet used to stay full-width like on a
+     phone, stretching a short settings list across the entire screen.
+     From this width up, sheets instead behave like a proper desktop
+     panel: a fixed-width card docked to the bottom-right that slides in
+     from the side, so it reads as its own compact panel rather than a
+     stretched mobile sheet. */
+  @media (min-width: 860px){
+    .sheet{
+      left:auto; right:18px; bottom:18px; top:auto;
+      width:400px; max-width:calc(100vw - 36px);
+      max-height:calc(100vh - 36px - var(--safe-top) - var(--safe-bottom));
+      border-radius:20px; border-bottom:1px solid var(--line);
+      box-shadow:0 12px 40px rgba(0,0,0,.45);
+      transform:translateX(120%) translateY(0);
+    }
+    .sheet.show{ transform:translateX(0) translateY(0); }
+    .sheetHandle{ display:none; }
+  }
 </style>
 </head>
 <body>
+<!-- Hidden SVG filter used for 色合い (tint) — CSS's built-in filter functions
+     (brightness/contrast/saturate/hue-rotate/sepia/invert) have no "shift
+     green vs magenta" primitive, but feColorMatrix does, and it composes
+     into the same `filter:` CSS property as those other functions. That
+     keeps tint fully live (GPU-driven, no per-frame pixel loop) exactly
+     like the rest of the always-on adjustments. Values are rewritten by
+     applyAdjustments() whenever the 色合い slider moves. -->
+<svg width="0" height="0" style="position:absolute;overflow:hidden;">
+  <filter id="tintFilter">
+    <feColorMatrix type="matrix" id="tintMatrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0"/>
+  </filter>
+</svg>
 <div id="app">
 
   <header>
@@ -325,6 +357,7 @@
     <button class="hbtn" id="redoBtn" title="やり直す"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m15 14 5-5-5-5"/><path d="M20 9H9a6 6 0 0 0 0 12h1"/></svg></button>
     <button class="hbtn" id="layersHeaderBtn" title="レイヤー"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="m12 2 9 5-9 5-9-5 9-5Z"/><path d="m3 12 9 5 9-5"/><path d="m3 17 9 5 9-5"/></svg></button>
     <button class="hbtn" id="adjustToolBtn" title="画像調整"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 21V14"/><path d="M4 10V3"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M20 21v-5"/><path d="M20 12V3"/><circle cx="4" cy="12" r="2"/><circle cx="12" cy="10" r="2"/><circle cx="20" cy="14" r="2"/></svg></button>
+    <button class="hbtn" id="filterToolBtn" title="フィルター"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="5.2"/><circle cx="15" cy="14" r="5.2"/></svg></button>
     <button class="hbtn" id="helpBtn" title="使い方"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.5 9a2.5 2.5 0 0 1 4.9.8c0 1.7-2.4 2-2.4 3.5"/><path d="M12 17.2v.1"/></svg></button>
     <button class="hbtn" id="exportBtn" title="保存"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg></button>
   </header>
@@ -366,8 +399,10 @@
       <button class="tool active" data-tool="pen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19 7-7 3 3-7 7-3-3z"/><path d="m18 13-1.5-7.5L2 2l3.5 14.5L13 18z"/><path d="m2 2 7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg><span>ペン</span></button>
       <button class="tool" data-tool="blur"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9" stroke-dasharray="2 3"/><circle cx="12" cy="12" r="3"/></svg><span>ぼかし</span></button>
       <button class="tool" data-tool="smudge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21c-2-3-2-6 0-9s2-6 0-9"/><path d="M13 21c-1.6-3-1.6-6 0-9s1.6-6 0-9"/><path d="M18 21c-1.2-3-1.2-6 0-9s1.2-6 0-9"/></svg><span>なぞる</span></button>
+      <button class="tool" data-tool="smooth"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17c3-6 3-11 9-11s3 8 9 8"/><path d="M3 20c2.5-2 5-2 7 0s4.5 2 7 0"/></svg><span>なじませ</span></button>
       <button class="tool" data-tool="eraser"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 21-4.3-4.3a1 1 0 0 1 0-1.4l9.6-9.6a1 1 0 0 1 1.4 0l5.6 5.6a1 1 0 0 1 0 1.4L13 18"/><path d="M22 21H7"/></svg><span>消しゴム</span></button>
       <button class="tool" data-tool="lash"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 15c4-4 14-4 18 0"/><path d="M7.2 13c-.9-1.7-1.1-2.8-.9-3.9"/><path d="M12 12.4c0-1.9.2-3 .6-3.9"/><path d="M16.8 13c.9-1.7 1.1-2.8.9-3.9"/></svg><span>まつ毛</span></button>
+      <button class="tool" data-tool="eyebulge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3.2"/></svg><span>目サイズ</span></button>
       <button class="tool" id="brushToolBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20c1-4 2-8 6-8s5 4 6 8"/><circle cx="17" cy="6" r="3"/></svg><span>ブラシ設定</span></button>
     </div>
     <div class="toolRow">
@@ -407,7 +442,7 @@
     <div class="row"><label>ラメの量</label><input type="range" id="glitterDensitySlider" min="10" max="100" value="55"><span class="val" id="glitterDensityVal">55</span></div>
   </div>
 
-  <div class="row"><label>太さ</label><input type="range" id="sizeSlider" min="1" max="120" value="10"><span class="val" id="sizeVal">10</span></div>
+  <div class="row"><label>太さ</label><input type="range" id="sizeSlider" min="0" max="1000" step="1" value="500"><span class="val" id="sizeVal">10</span></div>
   <div class="row"><label>不透明度</label><input type="range" id="opSlider" min="1" max="100" value="100"><span class="val" id="opVal">100</span></div>
   <div class="row"><label>ふちのやわらかさ</label><input type="range" id="softSlider" min="0" max="100" value="0"><span class="val" id="softVal">0</span></div>
   <p style="font-size:11px;color:var(--text-dim);line-height:1.6;margin:-8px 0 14px;">ふちのやわらかさを上げると、Gペンでもふんわりにじんだ線になります。0でくっきり、100でエアブラシ並みにぼやけます。</p>
@@ -427,7 +462,7 @@
 <div class="sheet" id="eraserSheet">
   <div class="sheetHandle"></div>
   <div class="sheetTitle">🧽 消しゴム設定</div>
-  <div class="row"><label>消しゴムの大きさ</label><input type="range" id="eraserSizeSlider" min="1" max="150" value="24"><span class="val" id="eraserSizeVal">24</span></div>
+  <div class="row"><label>消しゴムの大きさ</label><input type="range" id="eraserSizeSlider" min="0" max="1000" step="1" value="500"><span class="val" id="eraserSizeVal">24</span></div>
   <div class="previewWrap">
     <div id="eraserSizePreview" style="border-radius:50%;background:rgba(255,255,255,.12);border:2px dashed var(--text-dim);"></div>
   </div>
@@ -439,7 +474,7 @@
 <div class="sheet" id="blurSheet">
   <div class="sheetHandle"></div>
   <div class="sheetTitle">💫 ぼかし設定</div>
-  <div class="row"><label>ブラシの太さ</label><input type="range" id="blurSizeSlider" min="10" max="260" value="90"><span class="val" id="blurSizeVal">90</span></div>
+  <div class="row"><label>ブラシの太さ</label><input type="range" id="blurSizeSlider" min="0" max="1000" step="1" value="500"><span class="val" id="blurSizeVal">90</span></div>
   <div class="previewWrap">
     <div id="blurSizePreview" style="border-radius:50%;background:rgba(127,224,255,.35);border:2px solid var(--crystal);"></div>
   </div>
@@ -452,13 +487,43 @@
 <div class="sheet" id="smudgeSheet">
   <div class="sheetHandle"></div>
   <div class="sheetTitle">🫳 なぞる設定</div>
-  <div class="row"><label>指の太さ</label><input type="range" id="smudgeSizeSlider" min="10" max="260" value="70"><span class="val" id="smudgeSizeVal">70</span></div>
+  <div class="row"><label>指の太さ</label><input type="range" id="smudgeSizeSlider" min="0" max="1000" step="1" value="500"><span class="val" id="smudgeSizeVal">70</span></div>
   <div class="previewWrap">
     <div id="smudgeSizePreview" style="border-radius:50%;background:rgba(127,224,255,.35);border:2px solid var(--crystal);"></div>
   </div>
   <div class="row"><label>なぞる強さ</label><input type="range" id="smudgeStrengthSlider" min="1" max="100" value="45"><span class="val" id="smudgeStrengthVal">45</span></div>
   <p style="font-size:11.5px;color:var(--text-dim);line-height:1.7;margin:0 0 8px;">指でなぞったように、色そのものを引きずって伸ばします。PhotoshopやIllustratorの「指先ツール」と同じ動きです。<b style="color:var(--gold);">今選んでいるレイヤーだけ</b>に効きます。</p>
   <p style="font-size:11.5px;color:var(--crystal);line-height:1.6;margin:0;">🎯 今の対象：<span id="smudgeTargetLabel">-</span>（レイヤー一覧で切り替えられます）</p>
+</div>
+
+<!-- Smooth / なじませ (edge-aware jaggy-softening brush) settings sheet -->
+<div class="sheet" id="smoothSheet">
+  <div class="sheetHandle"></div>
+  <div class="sheetTitle">🪶 なじませ設定</div>
+  <div class="row"><label>ブラシの太さ</label><input type="range" id="smoothSizeSlider" min="0" max="1000" step="1" value="500"><span class="val" id="smoothSizeVal">60</span></div>
+  <div class="previewWrap">
+    <div id="smoothSizePreview" style="border-radius:50%;background:rgba(127,224,255,.35);border:2px solid var(--crystal);"></div>
+  </div>
+  <div class="row"><label>なじませ強さ</label><input type="range" id="smoothStrengthSlider" min="1" max="100" value="45"><span class="val" id="smoothStrengthVal">45</span></div>
+  <p style="font-size:11.5px;color:var(--text-dim);line-height:1.7;margin:0 0 8px;">「ぼかし」と違って、髪の毛のフチのようなギザギザした境目だけを狙ってなめらかにします。ベタ塗りの部分やディテールはあまり変化しないので、写真全体をぼかさずにジャギーだけ和らげたい時向けです。<b style="color:var(--gold);">今選んでいるレイヤーだけ</b>に効きます。</p>
+  <p style="font-size:11.5px;color:var(--crystal);line-height:1.6;margin:0;">🎯 今の対象：<span id="smoothTargetLabel">-</span>（レイヤー一覧で切り替えられます）</p>
+</div>
+
+<!-- 目を大きく／小さく (eye bulge/pinch spot warp) settings sheet -->
+<div class="sheet" id="eyeBulgeSheet">
+  <div class="sheetHandle"></div>
+  <div class="sheetTitle">👁 目サイズ設定</div>
+  <p style="font-size:11.5px;color:var(--text-dim);line-height:1.7;margin:0 0 8px;">目の中心をタップ（ドラッグもOK）すると、その場を拡大・縮小できるよ。自動で目を検出しているわけではないので、狙いたい場所を自分でタップしてね。<b style="color:var(--gold);">今選んでいるレイヤーだけ</b>に効きます。</p>
+  <div class="presetRow" id="eyeBulgeModeRow" style="flex-wrap:wrap;overflow:visible;">
+    <div class="presetChip sel" data-eyemode="bigger">大きく</div>
+    <div class="presetChip" data-eyemode="smaller">小さく</div>
+  </div>
+  <div class="row"><label>範囲</label><input type="range" id="eyeBulgeRadiusSlider" min="20" max="200" value="70"><span class="val" id="eyeBulgeRadiusVal">70</span></div>
+  <div class="previewWrap">
+    <div id="eyeBulgeRadiusPreview" style="border-radius:50%;background:rgba(127,224,255,.35);border:2px solid var(--crystal);"></div>
+  </div>
+  <div class="row"><label>強さ</label><input type="range" id="eyeBulgeStrengthSlider" min="1" max="100" value="40"><span class="val" id="eyeBulgeStrengthVal">40</span></div>
+  <p style="font-size:11.5px;color:var(--crystal);line-height:1.6;margin:0;">🎯 今の対象：<span id="eyeBulgeTargetLabel">-</span>（レイヤー一覧で切り替えられます）</p>
 </div>
 
 <!-- Eyelash assist (なぞって生成) settings sheet -->
@@ -468,7 +533,7 @@
   <p style="font-size:11.5px;color:var(--text-dim);line-height:1.7;margin:0 0 6px;">まぶたのキワを軽くなぞると、その形に沿って自然なまつ毛を自動で描き足すよ。指を離した瞬間に生成されるので、気に入らなければ<b style="color:var(--gold);">元に戻す</b>ですぐやり直せます。</p>
   <p style="font-size:11px;color:var(--crystal);line-height:1.7;margin:0 0 12px;">💡 なぞる向きでまつ毛の流れが変わるよ。目頭→目尻になぞると外側にキュッと流れ、逆向きだと内側に流れる印象になるよ。</p>
 
-  <div class="previewWrap lashPreviewWrap"><canvas id="lashPreviewCanvas" width="320" height="96"></canvas></div>
+  <div class="previewWrap lashPreviewWrap" style="height:132px;"><canvas id="lashPreviewCanvas" width="380" height="132"></canvas></div>
   <div class="previewLabel">↑ 今の設定でのまつ毛サンプル</div>
 
   <div class="brushTypeGrid">
@@ -477,13 +542,13 @@
   </div>
 
   <div class="row"><label>密度</label><input type="range" id="lashDensitySlider" min="10" max="160" value="60"><span class="val" id="lashDensityVal">60</span></div>
-  <div class="row"><label>束感</label><input type="range" id="lashClumpSlider" min="0" max="100" value="0"><span class="val" id="lashClumpVal">0</span></div>
+  <div class="row"><label>束感</label><input type="range" id="lashClumpSlider" min="0" max="160" value="0"><span class="val" id="lashClumpVal">0</span></div>
   <div class="brushTypeGrid">
     <div class="lashSideBtn sel" data-lashclumpstyle="spread"><span class="bicon">🍃</span>根元ばらけ</div>
     <div class="lashSideBtn" data-lashclumpstyle="joined"><span class="bicon">🪭</span>根元そろえ</div>
   </div>
   <p style="font-size:11px;color:var(--text-dim);line-height:1.6;margin:-8px 0 14px;">束感を上げると、まつ毛が1本ずつ均等に並ぶ代わりに数本ずつのまとまり（房）になって、房と房の間にすき間ができるよ（0でいつも通りの均等な並び）。「根元ばらけ」は房の中の根元も少しバラけたナチュラルなまとまり方、「根元そろえ」は房の根元をぴったり1点に揃えて、そこから2本＋短めの1本が扇状に開く、手描き風のV字まつ毛になるよ。</p>
-  <div class="row"><label>長さ</label><input type="range" id="lashLengthSlider" min="2" max="160" value="32"><span class="val" id="lashLengthVal">32</span></div>
+  <div class="row"><label>長さ</label><input type="range" id="lashLengthSlider" min="10" max="160" value="32"><span class="val" id="lashLengthVal">32</span></div>
   <div class="row"><label>カール</label><input type="range" id="lashCurlSlider" min="0" max="100" value="45"><span class="val" id="lashCurlVal">45</span></div>
 
   <div class="brushTypeGrid">
@@ -566,28 +631,48 @@
   <div class="sheetHandle"></div>
   <div class="sheetTitle">🎚️ 画像調整<button id="adjustCloseBtn" style="margin-left:auto;background:none;border:none;color:var(--text-dim);font-size:18px;line-height:1;padding:4px 6px;">✕</button></div>
 
-  <div class="presetRow" id="presetRow">
-    <div class="presetChip sel" data-preset="normal">ノーマル</div>
-    <div class="presetChip" data-preset="vivid">ビビッド</div>
-    <div class="presetChip" data-preset="soft">ふんわり</div>
-    <div class="presetChip" data-preset="cool">クール</div>
-    <div class="presetChip" data-preset="sepia">セピア</div>
-    <div class="presetChip" data-preset="mono">モノクロ</div>
-    <div class="presetChip" data-preset="retro">レトロ</div>
-  </div>
+  <div class="row"><label>明るさ</label><input type="range" id="brSlider" min="-100" max="100" value="0"><span class="val" id="brVal">0</span></div>
+  <div class="row"><label>コントラスト</label><input type="range" id="ctSlider" min="-100" max="100" value="0"><span class="val" id="ctVal">0</span></div>
 
-  <div class="row"><label>明るさ</label><input type="range" id="brSlider" min="-60" max="60" value="0"><span class="val" id="brVal">0</span></div>
-  <div class="row"><label>コントラスト</label><input type="range" id="ctSlider" min="-60" max="60" value="0"><span class="val" id="ctVal">0</span></div>
-  <div class="row"><label>彩度</label><input type="range" id="stSlider" min="-100" max="100" value="0"><span class="val" id="stVal">0</span></div>
-  <div class="row"><label>色温度</label><input type="range" id="wmSlider" min="-30" max="30" value="0"><span class="val" id="wmVal">0</span></div>
+  <div style="font-size:12.5px;font-weight:700;color:var(--gold);margin:10px 0 6px;">💡 ライト</div>
+  <div class="row"><label>ハイライト</label><input type="range" id="hlSlider" min="-100" max="100" value="0"><span class="val" id="hlVal">0</span></div>
+  <div class="row"><label>シャドウ</label><input type="range" id="shSlider" min="-100" max="100" value="0"><span class="val" id="shVal">0</span></div>
+  <div class="row"><label>ホワイト</label><input type="range" id="whSlider" min="-100" max="100" value="0"><span class="val" id="whVal">0</span></div>
+  <div class="row"><label>ブラック</label><input type="range" id="blSlider" min="-100" max="100" value="0"><span class="val" id="blVal">0</span></div>
+  <p style="font-size:11px;color:var(--text-dim);line-height:1.6;margin:-8px 0 14px;">明るさ・コントラストが写真全体に均等にかかるのに対して、こちらは明るい部分／暗い部分だけを狙って持ち上げたり締めたりします。他の一発系スライダーと同じく、離すと適用されて0に戻ります。</p>
+
+  <div style="font-size:12.5px;font-weight:700;color:var(--gold);margin:4px 0 6px;">💧 ホワイトバランス</div>
+  <div class="row"><label>色温度</label><input type="range" id="wmSlider" min="-60" max="60" value="0"><span class="val" id="wmVal">0</span></div>
+  <div class="row"><label>色合い</label><input type="range" id="tintSlider" min="-60" max="60" value="0"><span class="val" id="tintVal">0</span></div>
+
+  <div style="font-size:12.5px;font-weight:700;color:var(--gold);margin:10px 0 6px;">🎨 カラー調整</div>
+  <div class="togRow"><label>反転</label><button class="toggle" id="invertTog"></button></div>
+  <div class="row"><label>自然な彩度</label><input type="range" id="vibranceSlider" min="-100" max="100" value="0"><span class="val" id="vibranceVal">0</span></div>
+  <div class="row"><label>彩度</label><input type="range" id="stSlider" min="-100" max="200" value="0"><span class="val" id="stVal">0</span></div>
+  <p style="font-size:11px;color:var(--text-dim);line-height:1.6;margin:-8px 0 14px;">「彩度」は色の鮮やかさ全体を一律に強める／弱めるのに対して、「自然な彩度」はすでに鮮やかな色にはあまり効かせず、くすんだ色を優先して持ち上げるので、肌色などが不自然に色濃くなりにくいです。</p>
+
   <div class="row"><label>セピア</label><input type="range" id="spSlider" min="0" max="100" value="0"><span class="val" id="spVal">0</span></div>
   <div class="row"><label>ビネット</label><input type="range" id="vgSlider" min="0" max="100" value="0"><span class="val" id="vgVal">0</span></div>
 
-  <div class="row"><label>黄ばみ除去</label><input type="range" id="deyellowSlider" min="0" max="100" value="0"><span class="val" id="deyellowVal">0</span></div>
-  <p style="font-size:11px;color:var(--text-dim);line-height:1.6;margin:-8px 0 14px;">肌や背景の黄ばみだけをやわらげます（色温度と違い、黄色っぽいピクセルだけを狙って抑えます）。スライダーを離すと適用されて0に戻ります。やりすぎたら「元に戻す」で取り消せます。</p>
+  <div style="font-size:12.5px;font-weight:700;color:var(--gold);margin:10px 0 6px;">〰️ テクスチャー</div>
+  <div class="row"><label>明瞭度</label><input type="range" id="claritySlider" min="0" max="100" value="0"><span class="val" id="clarityVal">0</span></div>
+  <p style="font-size:11px;color:var(--text-dim);line-height:1.6;margin:-8px 0 14px;">シャープが輪郭のふちだけをくっきりさせるのに対して、明瞭度は写真全体の質感・立体感（中間の濃淡のコントラスト）を強めます。かけすぎると少しザラついた印象になるので、様子を見ながら調整してね。</p>
+
+  <div style="font-size:12.5px;font-weight:700;color:var(--gold);margin:4px 0 6px;">🎨 色かぶり除去</div>
+  <div class="presetRow" id="castModeRow" style="flex-wrap:wrap;overflow:visible;">
+    <div class="presetChip sel" data-cast="yellow">黄み</div>
+    <div class="presetChip" data-cast="red">赤み</div>
+    <div class="presetChip" data-cast="green">緑み</div>
+    <div class="presetChip" data-cast="blue">青み</div>
+  </div>
+  <div class="row"><label>除去の強さ</label><input type="range" id="deyellowSlider" min="0" max="100" value="0"><span class="val" id="deyellowVal">0</span></div>
+  <p style="font-size:11px;color:var(--text-dim);line-height:1.6;margin:-8px 0 14px;">選んだ色みだけを狙ってやわらげます（色温度と違い、その色っぽいピクセルだけを抑えます）。肌や背景の黄ばみ・赤み・緑がかり・青みなど、気になる色かぶりに合わせて選べます。スライダーを離すと適用されて0に戻ります。やりすぎたら「元に戻す」で取り消せます。</p>
 
   <div class="row"><label>シャープ</label><input type="range" id="sharpenSlider" min="0" max="100" value="0"><span class="val" id="sharpenVal">0</span></div>
   <p style="font-size:11px;color:var(--text-dim);line-height:1.6;margin:-8px 0 14px;">輪郭をくっきりさせて、ぼやけた写真を鮮明に見せます（解像度アップとは別に、今のサイズのまま画質だけシャープにします）。黄ばみ除去と同じく、離すと適用されて0に戻ります。</p>
+
+  <div class="row"><label>ジャギー除去</label><input type="range" id="antiJaggySlider" min="0" max="100" value="0"><span class="val" id="antiJaggyVal">0</span></div>
+  <p style="font-size:11px;color:var(--text-dim);line-height:1.6;margin:-8px 0 14px;">髪の毛のフチなど、ピクセルのギザギザを写真全体でならしてなめらかにします（強くかけすぎるとシャープさも一緒に失われるので、まずは弱めから試すのがおすすめ）。他のスライダーと同じく、離すと適用されて0に戻ります。</p>
 
   <div style="border-top:1px solid var(--line); margin:2px 0 12px; padding-top:14px;">
     <div style="font-size:12.5px;font-weight:700;color:var(--gold);margin-bottom:6px;">🔍 解像度アップ（編集中の画質を上げる）</div>
@@ -601,11 +686,87 @@
     <button id="doUpscaleBtn" style="width:100%;padding:10px;border-radius:14px;border:1.5px solid var(--gold);background:rgba(243,205,142,.08);color:var(--gold);font-weight:700;font-size:12.5px;font-family:'M PLUS Rounded 1c';">この倍率で解像度を上げる</button>
   </div>
 
+  <div style="border-top:1px solid var(--line); margin:2px 0 12px; padding-top:14px;">
+    <div style="font-size:12.5px;font-weight:700;color:var(--gold);margin-bottom:6px;">✂️ トリミング</div>
+    <p style="font-size:11px;color:var(--text-dim);line-height:1.6;margin:0 0 10px;">写真の余分な部分を切り落とします。範囲を選ぶと、今の写真と描き込んだ内容すべて（レイヤー含む）が一緒に切り抜かれます。<b style="color:var(--danger);">この操作は元に戻せません。</b></p>
+    <button id="startCropBtn" style="width:100%;padding:10px;border-radius:14px;border:1.5px solid var(--gold);background:rgba(243,205,142,.08);color:var(--gold);font-weight:700;font-size:12.5px;font-family:'M PLUS Rounded 1c';">範囲を選んでトリミング</button>
+  </div>
+
   <div class="transformRow">
     <button class="xbtn" id="rotateBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>回転</button>
     <button class="xbtn" id="flipHBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="m16 7 4 5-4 5"/><path d="m8 7-4 5 4 5"/></svg>左右反転</button>
     <button class="xbtn" id="flipVBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h18"/><path d="m7 16 5 4 5-4"/><path d="m7 8 5-4 5 4"/></svg>上下反転</button>
     <button class="xbtn warn" id="resetAdjustBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="m19 6-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>リセット</button>
+  </div>
+</div>
+
+<!-- フィルター (preset filter grid), split out of 画像調整 into its own tab
+     since the combined sheet had gotten too long to comfortably scroll. -->
+<div class="sheet" id="filterSheet">
+  <div class="sheetHandle"></div>
+  <div class="sheetTitle">🎞️ フィルター<button id="filterCloseBtn" style="margin-left:auto;background:none;border:none;color:var(--text-dim);font-size:18px;line-height:1;padding:4px 6px;">✕</button></div>
+
+  <div class="row"><label>強さ</label><input type="range" id="filterIntensitySlider" min="0" max="100" value="100"><span class="val" id="filterIntensityVal">100</span></div>
+  <p style="font-size:11px;color:var(--text-dim);line-height:1.6;margin:-8px 0 14px;">選んだフィルターの効き具合を調整できます（0＝ノーマル、100＝そのフィルターそのまま）。</p>
+
+  <div style="font-size:12.5px;font-weight:700;color:var(--gold);margin:0 0 6px;">ベーシック</div>
+  <div class="presetRow" id="filterRowBasic" style="flex-wrap:wrap;overflow:visible;">
+    <div class="presetChip sel" data-preset="normal">ノーマル</div>
+    <div class="presetChip" data-preset="vivid">ビビッド</div>
+    <div class="presetChip" data-preset="sepia">セピア</div>
+    <div class="presetChip" data-preset="mono">モノクロ</div>
+  </div>
+
+  <div style="font-size:12.5px;font-weight:700;color:var(--gold);margin:10px 0 6px;">Natural</div>
+  <div class="presetRow" id="filterRowNatural" style="flex-wrap:wrap;overflow:visible;">
+    <div class="presetChip" data-preset="fresco">フレスコ</div>
+    <div class="presetChip" data-preset="belvedere">ベルヴェデール</div>
+    <div class="presetChip" data-preset="flint">フリント</div>
+    <div class="presetChip" data-preset="luna">ルナ</div>
+    <div class="presetChip" data-preset="aero">エアロ</div>
+    <div class="presetChip" data-preset="mist">ミスト</div>
+  </div>
+
+  <div style="font-size:12.5px;font-weight:700;color:var(--gold);margin:10px 0 6px;">Soft</div>
+  <div class="presetRow" id="filterRowSoft" style="flex-wrap:wrap;overflow:visible;">
+    <div class="presetChip" data-preset="soft">ふんわり</div>
+    <div class="presetChip" data-preset="aura">オーラ</div>
+    <div class="presetChip" data-preset="hazel">ヘーゼル</div>
+    <div class="presetChip" data-preset="whim">気まぐれ</div>
+    <div class="presetChip" data-preset="rose">ローズ</div>
+    <div class="presetChip" data-preset="ocean">オーシャン</div>
+    <div class="presetChip" data-preset="raincloud">雨雲</div>
+  </div>
+
+  <div style="font-size:12.5px;font-weight:700;color:var(--gold);margin:10px 0 6px;">Vintage</div>
+  <div class="presetRow" id="filterRowVintage" style="flex-wrap:wrap;overflow:visible;">
+    <div class="presetChip" data-preset="retro">レトロ</div>
+    <div class="presetChip" data-preset="vintage">ヴィンテージ</div>
+    <div class="presetChip" data-preset="fadeF">フェード</div>
+    <div class="presetChip" data-preset="antique">アンティーク</div>
+    <div class="presetChip" data-preset="nostalgia">ノスタルジー</div>
+    <div class="presetChip" data-preset="dreamF">ドリーム</div>
+  </div>
+
+  <div style="font-size:12.5px;font-weight:700;color:var(--gold);margin:10px 0 6px;">Warm</div>
+  <div class="presetRow" id="filterRowWarm" style="flex-wrap:wrap;overflow:visible;">
+    <div class="presetChip" data-preset="bali">バリ</div>
+    <div class="presetChip" data-preset="capri">カプリ</div>
+    <div class="presetChip" data-preset="latte">ラテ</div>
+    <div class="presetChip" data-preset="bronze">ブロンズ</div>
+    <div class="presetChip" data-preset="sandy">サンディー</div>
+    <div class="presetChip" data-preset="sangria">サングリア</div>
+  </div>
+
+  <div style="font-size:12.5px;font-weight:700;color:var(--gold);margin:10px 0 6px;">Cool</div>
+  <div class="presetRow" id="filterRowCool" style="flex-wrap:wrap;overflow:visible;">
+    <div class="presetChip" data-preset="cool">クール</div>
+    <div class="presetChip" data-preset="scandi">スカンディ</div>
+    <div class="presetChip" data-preset="nordic">ノルディック</div>
+    <div class="presetChip" data-preset="astro">アストロ</div>
+    <div class="presetChip" data-preset="arctic">アークティック</div>
+    <div class="presetChip" data-preset="polar">ポーラー</div>
+    <div class="presetChip" data-preset="tundra">ツンドラ</div>
   </div>
 </div>
 
@@ -672,14 +833,14 @@
   <div id="layerList"></div>
   <button id="addLayerBtn">＋ 新規レイヤーを追加</button>
   <button id="flattenAllBtn">🧩 すべてのレイヤーを元画像に統合</button>
-  <p style="font-size:10.5px;color:var(--text-dim);line-height:1.6;margin:6px 0 0;">レイヤーの各「⬇」ボタンで1つ下のレイヤー（一番下は元画像）に結合できます。統合すると元には戻せないので注意してね。各レイヤーの不透明度スライダーの下にある「通常」のプルダウンから、乗算・スクリーン・オーバーレイ・ソフトライト・焼き込みなどのブレンドモードを選べます。</p>
+  <p style="font-size:10.5px;color:var(--text-dim);line-height:1.6;margin:6px 0 0;">レイヤーの各「⬇」ボタンで1つ下のレイヤー（一番下は元画像）に結合できます。統合すると元には戻せないので注意してね。各レイヤーの不透明度スライダーの下にある「通常」のプルダウンから、乗算・スクリーン・オーバーレイ・ソフトライト・焼き込みなどのブレンドモードを選べます。ブレンドモードを選んでいる間は、同じ不透明度スライダーが「効果の強さ」も兼ねます（0%＝効果なし、100%＝そのブレンドモードを普通にかけた状態）。</p>
 </div>
 
 <!-- Export / resolution sheet -->
 <div class="sheet" id="exportSheet">
   <div class="sheetHandle"></div>
   <div class="sheetTitle">💾 保存</div>
-  <p style="font-size:11.5px;color:var(--text-dim);line-height:1.7;margin:0 0 12px;">そのままのサイズで保存するか、解像度を上げてより高精細なPNGとして保存できます（拡大時は自動でくっきり補正されます）。</p>
+  <p style="font-size:11.5px;color:var(--text-dim);line-height:1.7;margin:0 0 12px;">そのままのサイズで保存するか、解像度を上げてより高精細な画像として保存できます（拡大時は自動でくっきり補正されます）。</p>
   <div class="presetRow" id="exportScaleRow" style="flex-wrap:wrap;overflow:visible;">
     <div class="presetChip sel" data-scale="1">等倍</div>
     <div class="presetChip" data-scale="1.5">1.5倍</div>
@@ -687,6 +848,15 @@
     <div class="presetChip" data-scale="3">3倍（高精細）</div>
   </div>
   <div class="previewLabel" id="exportSizeLabel">-</div>
+
+  <div class="presetRow" id="exportFormatRow" style="flex-wrap:wrap;overflow:visible;">
+    <div class="presetChip sel" data-format="png">PNG（劣化なし）</div>
+    <div class="presetChip" data-format="jpeg">JPEG（軽量）</div>
+    <div class="presetChip" data-format="webp">WebP（軽量・高画質）</div>
+  </div>
+  <p style="font-size:11px;color:var(--text-dim);line-height:1.6;margin:-8px 0 12px;" id="exportFormatNote">PNGは画質が完全に保たれますが、ファイルサイズは大きめです。透明な部分があるコラージュも透明のまま保存できます。</p>
+  <div class="row" id="exportQualityRow" style="display:none;"><label>画質</label><input type="range" id="exportQualitySlider" min="10" max="100" value="90"><span class="val" id="exportQualityVal">90</span></div>
+
   <button id="doExportBtn" style="width:100%;padding:12px;border-radius:16px;border:none;background:linear-gradient(120deg, var(--crystal), #a3c9ff);color:#101431;font-weight:700;font-size:13px;font-family:'M PLUS Rounded 1c';">この設定で保存する</button>
 </div>
 
@@ -714,6 +884,7 @@
       <tr><th>ペン</th><td>フリーハンドで描く。線画・加筆の基本</td></tr>
       <tr><th>ぼかし</th><td>なぞった場所をふんわりぼかす</td></tr>
       <tr><th>なぞる</th><td>指で色を引きずって伸ばす（指先ツール）</td></tr>
+      <tr><th>なじませ</th><td>髪の毛の輪郭など、ギザギザした境目だけをなめらかにする（ぼかしと違い平らな場所はあまり変わらない）</td></tr>
       <tr><th>消しゴム</th><td>描いたものを消す。専用の太さ・不透明度あり</td></tr>
       <tr><th>まつ毛</th><td>まぶたをなぞるだけで自然なまつ毛を自動生成</td></tr>
       <tr><th>ブラシ設定</th><td>今選んでいるツールの詳細設定を開く（自動で切り替わる）</td></tr>
@@ -765,7 +936,7 @@
 
   <details class="helpSection">
     <summary>⑦ 画像調整</summary>
-    <p>ヘッダーの🎚️から開きます。プリセット（ビビッド・ふんわり・セピアなど）に加え、明るさ・コントラスト・彩度・色温度・ビネットを個別調整可能。「黄ばみ除去」「シャープ」もここにあります。「解像度アップ」は編集中の画質を上げられますが<b>元に戻せません</b>。</p>
+    <p>ヘッダーの🎚️から開きます。プリセット（ビビッド・ふんわり・セピアなど）に加え、明るさ・コントラスト・彩度・色温度・ビネットを個別調整可能。「黄ばみ除去」「シャープ」「ジャギー除去」もここにあります。「トリミング」で写真とレイヤーをまとめて切り抜けます。「解像度アップ」と同じく、トリミングも<b>元に戻せません</b>。</p>
   </details>
 
   <details class="helpSection">
@@ -828,6 +999,29 @@
     clearTimeout(showToast._t);
     showToast._t = setTimeout(()=>toast.classList.remove('show'), 1600);
   }
+  // Same as showToast, but stays up much longer and is used only for
+  // unexpected errors — long enough to actually read/screenshot the
+  // message instead of it vanishing in 1.6s like a normal status toast.
+  function showErrorToast(msg){
+    toast.textContent = '⚠️ ' + msg; toast.classList.add('show');
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(()=>toast.classList.remove('show'), 8000);
+  }
+  // ---------------- Global error safety net ----------------
+  // Previously, any uncaught exception anywhere (a bad redraw, a broken
+  // image, etc.) failed completely silently — the screen could go blank/
+  // black or a button could get stuck disabled forever, with zero feedback
+  // about what actually happened. Now any uncaught error or rejected
+  // promise is surfaced as an on-screen message (and still logged to the
+  // console) instead of just silently breaking the app.
+  window.addEventListener('error', (e)=>{
+    console.error('Uncaught error:', e.error || e.message);
+    showErrorToast('エラーが発生しました: ' + (e.message || (e.error && e.error.message) || '不明なエラー'));
+  });
+  window.addEventListener('unhandledrejection', (e)=>{
+    console.error('Unhandled rejection:', e.reason);
+    showErrorToast('エラーが発生しました: ' + (e.reason && e.reason.message ? e.reason.message : String(e.reason)));
+  });
 
   // ---------------- App state ----------------
   const state = {
@@ -850,6 +1044,11 @@
     blurStrength:20,
     smudgeSize:70,
     smudgeStrength:45,
+    smoothSize:60,
+    smoothStrength:45,
+    eyeBulgeMode:'bigger',
+    eyeBulgeRadius:70,
+    eyeBulgeStrength:40,
     lashDensity:60,
     lashClump:0,
     lashClumpStyle:'spread',
@@ -868,15 +1067,49 @@
     activeLayerId:null,
   };
 
-  const adjust = { brightness:0, contrast:0, saturate:0, warmth:0, sepia:0, vignette:0 };
+  const adjust = { brightness:0, contrast:0, saturate:0, warmth:0, tint:0, sepia:0, vignette:0, invert:0 };
   const PRESETS = {
-    normal:{brightness:0,contrast:0,saturate:0,warmth:0,sepia:0,vignette:0},
-    vivid:{brightness:6,contrast:18,saturate:45,warmth:0,sepia:0,vignette:0},
-    soft:{brightness:14,contrast:-12,saturate:-15,warmth:6,sepia:8,vignette:0},
-    cool:{brightness:2,contrast:6,saturate:-8,warmth:-18,sepia:0,vignette:8},
-    sepia:{brightness:4,contrast:2,saturate:-30,warmth:8,sepia:55,vignette:12},
-    mono:{brightness:2,contrast:12,saturate:-100,warmth:0,sepia:0,vignette:10},
-    retro:{brightness:6,contrast:-8,saturate:-20,warmth:14,sepia:22,vignette:26},
+    normal:{brightness:0,contrast:0,saturate:0,warmth:0,tint:0,sepia:0,vignette:0,invert:0},
+    vivid:{brightness:6,contrast:18,saturate:45,warmth:0,tint:0,sepia:0,vignette:0,invert:0},
+    sepia:{brightness:4,contrast:2,saturate:-30,warmth:8,tint:0,sepia:55,vignette:12,invert:0},
+    mono:{brightness:2,contrast:12,saturate:-100,warmth:0,tint:0,sepia:0,vignette:10,invert:0},
+    // Natural
+    fresco:{brightness:10,contrast:-6,saturate:-10,warmth:10,tint:-8,sepia:10,vignette:6,invert:0},
+    belvedere:{brightness:4,contrast:14,saturate:20,warmth:-10,tint:4,sepia:0,vignette:14,invert:0},
+    flint:{brightness:-4,contrast:24,saturate:-40,warmth:-6,tint:0,sepia:0,vignette:18,invert:0},
+    luna:{brightness:8,contrast:-4,saturate:-25,warmth:-14,tint:8,sepia:0,vignette:10,invert:0},
+    aero:{brightness:12,contrast:-8,saturate:10,warmth:2,tint:-6,sepia:0,vignette:0,invert:0},
+    mist:{brightness:16,contrast:-18,saturate:-20,warmth:4,tint:0,sepia:4,vignette:4,invert:0},
+    // Soft
+    soft:{brightness:14,contrast:-12,saturate:-15,warmth:6,tint:0,sepia:8,vignette:0,invert:0},
+    aura:{brightness:16,contrast:-14,saturate:-10,warmth:-6,tint:6,sepia:0,vignette:0,invert:0},
+    hazel:{brightness:8,contrast:-6,saturate:-5,warmth:10,tint:-4,sepia:12,vignette:0,invert:0},
+    whim:{brightness:12,contrast:-10,saturate:-8,warmth:-4,tint:14,sepia:0,vignette:0,invert:0},
+    rose:{brightness:10,contrast:-8,saturate:-4,warmth:2,tint:16,sepia:0,vignette:0,invert:0},
+    ocean:{brightness:6,contrast:-4,saturate:-6,warmth:-22,tint:-4,sepia:0,vignette:0,invert:0},
+    raincloud:{brightness:2,contrast:-16,saturate:-30,warmth:-10,tint:0,sepia:0,vignette:10,invert:0},
+    // Vintage
+    retro:{brightness:6,contrast:-8,saturate:-20,warmth:14,tint:0,sepia:22,vignette:26,invert:0},
+    vintage:{brightness:4,contrast:-10,saturate:-25,warmth:16,tint:0,sepia:26,vignette:22,invert:0},
+    fadeF:{brightness:10,contrast:-22,saturate:-20,warmth:6,tint:0,sepia:12,vignette:8,invert:0},
+    antique:{brightness:0,contrast:-6,saturate:-30,warmth:20,tint:0,sepia:34,vignette:26,invert:0},
+    nostalgia:{brightness:6,contrast:-12,saturate:-22,warmth:12,tint:4,sepia:20,vignette:16,invert:0},
+    dreamF:{brightness:14,contrast:-16,saturate:-15,warmth:4,tint:8,sepia:6,vignette:0,invert:0},
+    // Warm
+    bali:{brightness:8,contrast:4,saturate:12,warmth:18,tint:0,sepia:6,vignette:0,invert:0},
+    capri:{brightness:10,contrast:2,saturate:6,warmth:12,tint:10,sepia:0,vignette:0,invert:0},
+    latte:{brightness:6,contrast:-4,saturate:-10,warmth:22,tint:0,sepia:18,vignette:0,invert:0},
+    bronze:{brightness:0,contrast:8,saturate:10,warmth:26,tint:0,sepia:14,vignette:10,invert:0},
+    sandy:{brightness:8,contrast:-4,saturate:-8,warmth:20,tint:0,sepia:16,vignette:0,invert:0},
+    sangria:{brightness:4,contrast:10,saturate:20,warmth:8,tint:18,sepia:0,vignette:6,invert:0},
+    // Cool
+    cool:{brightness:2,contrast:6,saturate:-8,warmth:-18,tint:0,sepia:0,vignette:8,invert:0},
+    scandi:{brightness:6,contrast:6,saturate:-6,warmth:-16,tint:0,sepia:0,vignette:0,invert:0},
+    nordic:{brightness:4,contrast:2,saturate:-12,warmth:-22,tint:2,sepia:0,vignette:0,invert:0},
+    astro:{brightness:2,contrast:8,saturate:0,warmth:-14,tint:14,sepia:0,vignette:8,invert:0},
+    arctic:{brightness:10,contrast:0,saturate:-18,warmth:-30,tint:0,sepia:0,vignette:0,invert:0},
+    polar:{brightness:14,contrast:-6,saturate:-24,warmth:-20,tint:2,sepia:0,vignette:0,invert:0},
+    tundra:{brightness:4,contrast:0,saturate:-30,warmth:-8,tint:-6,sepia:0,vignette:4,invert:0},
   };
 
   const PALETTE = ['#1a1512','#2b2118','#4a2e22','#6b3f2a','#8a5a3c','#c98b63',
@@ -1178,15 +1411,26 @@
   // cross-fade the effect in gradually.
   function syncBlendGhost(layer){
     const hasBlend = layer.blendMode && layer.blendMode!=='normal';
-    const amt = Math.max(0, Math.min(100, layer.blendAmount==null?100:layer.blendAmount))/100;
+    // Blend strength now IS the layer's own 不透明度 slider — one control,
+    // fading from 0% (fully invisible, no influence at all) to 100% (the
+    // full blend effect), exactly like an opacity slider on a blend-mode
+    // layer works in Clip Studio Paint / Photoshop. No separate "amount"
+    // slider needed.
+    const amt = Math.max(0, Math.min(1, layer.opacity));
     if(!hasBlend || amt>=0.999){
       layer.canvas.style.mixBlendMode = hasBlend ? layer.blendMode : 'normal';
       layer.canvas.style.opacity = layer.opacity;
       if(layer.ghostCanvas) layer.ghostCanvas.style.display = 'none';
       return;
     }
+    // BUGFIX: this used to also leave the raw canvas visible here at full
+    // opacity in normal mode — so even at a low blend strength you'd see
+    // the layer pasted in fully opaquely (a big, jarring change) with only
+    // a faint extra blend on top, making low settings look stronger than
+    // high ones. The raw canvas must be hidden here; only the ghost (which
+    // actually carries the blend mode) should be visible.
     layer.canvas.style.mixBlendMode = 'normal';
-    layer.canvas.style.opacity = layer.opacity;
+    layer.canvas.style.opacity = 0;
     if(!layer.ghostCanvas){
       const g = document.createElement('canvas');
       g.className = layer.canvas.className;
@@ -1199,7 +1443,7 @@
     if(g.height!==layer.canvas.height) g.height = layer.canvas.height;
     g.style.display = layer.visible ? 'block' : 'none';
     g.style.mixBlendMode = layer.blendMode;
-    g.style.opacity = layer.opacity*amt;
+    g.style.opacity = amt;
     const gctx = g.getContext('2d');
     gctx.clearRect(0,0,g.width,g.height);
     gctx.drawImage(layer.canvas,0,0);
@@ -1395,6 +1639,62 @@
     renderCropRect();
     closeSheets();
   }
+  // Whole-photo crop, launched from 画像調整 — trims the base photo AND every
+  // layer (drawing/collage/text) together at once, since they all share the
+  // same canvas coordinate space. Reuses the exact same drag/resize rect UI
+  // as the per-layer crop above; only cropState.layer is null to tell the
+  // Apply button which of the two crop behaviors to run.
+  function enterPhotoCropMode(){
+    if(!state.imgW){ showToast('先に写真を読み込んでね'); return; }
+    cropState = { layer: null, rect: { x:0, y:0, w:state.imgW, h:state.imgH } };
+    cropOverlay.style.display = 'block';
+    cropBar.style.display = 'flex';
+    renderCropRect();
+    closeSheets();
+  }
+  // Crops the base photo and every layer to the same rect, then shrinks the
+  // whole working canvas down to that size — a straight, lossless pixel copy
+  // (no resampling needed, unlike 解像度アップ). Any layer that tracks its own
+  // x/y (image or text layers) gets that position shifted so it still lines
+  // up correctly once the canvas origin moves.
+  function applyPhotoCrop(rect){
+    const nx = Math.round(rect.x), ny = Math.round(rect.y);
+    const nw = Math.max(1, Math.round(rect.w)), nh = Math.max(1, Math.round(rect.h));
+
+    function cropCanvasInPlace(canvas){
+      const tmp = document.createElement('canvas');
+      tmp.width = canvas.width; tmp.height = canvas.height;
+      tmp.getContext('2d').drawImage(canvas,0,0);
+      canvas.width = nw; canvas.height = nh;
+      canvas.getContext('2d').drawImage(tmp, -nx, -ny);
+    }
+
+    cropCanvasInPlace(photoCanvas);
+    layers.forEach(l=>{
+      cropCanvasInPlace(l.canvas);
+      if(l.ghostCanvas) cropCanvasInPlace(l.ghostCanvas);
+      if(l.imgTransform){
+        l.imgTransform.x -= nx; l.imgTransform.y -= ny;
+        if(l.imgTransform.slot){ l.imgTransform.slot.x -= nx; l.imgTransform.slot.y -= ny; }
+      }
+    });
+    vignetteCanvas.width = nw; vignetteCanvas.height = nh;
+    adjustCanvas.width = nw; adjustCanvas.height = nh;
+    state.imgW = nw; state.imgH = nh;
+
+    // Every canvas's pixel dimensions just changed, so old undo/redo snapshots
+    // (recorded at the old size) can no longer be reapplied safely — same
+    // reasoning as 解像度アップ above.
+    undoStack.length = 0; redoStack.length = 0; updateHistBtns();
+
+    drawVignette();
+    renderAdjustCanvas();
+    fitToScreen();
+    renderLayerList();
+    updateUpscaleLabel();
+    showToast(`トリミングしました（${nw}×${nh}）`);
+  }
+  document.getElementById('startCropBtn').addEventListener('click', enterPhotoCropMode);
   function exitCropMode(){
     cropOverlay.style.display = 'none';
     cropBar.style.display = 'none';
@@ -1403,6 +1703,11 @@
   document.getElementById('cropCancelBtn').addEventListener('click', exitCropMode);
   document.getElementById('cropApplyBtn').addEventListener('click', ()=>{
     if(!cropState) return;
+    if(!cropState.layer){
+      applyPhotoCrop(cropRectFromScreen());
+      exitCropMode();
+      return;
+    }
     const layer = cropState.layer;
     const rect = cropRectFromScreen();
     const t = layer.imgTransform;
@@ -1631,7 +1936,15 @@
   function fitToScreen(){
     const rect = stageWrap.getBoundingClientRect();
     const pad = 24;
-    const s = Math.min((rect.width-pad*2)/state.imgW, (rect.height-pad*2)/state.imgH, 3);
+    // Capped at 1 (never auto-magnify past the photo's actual resolution).
+    // On a small/phone screen this was rarely reached anyway, but on a
+    // large PC window a modest-resolution photo would get stretched up to
+    // fill the whole screen automatically — which is exactly what made
+    // brush sizing feel unpredictable/inconsistent between devices, since
+    // the same "size" value ends up covering a very different amount of
+    // screen space depending on how much it got stretched. Zooming in
+    // further is still available manually (scroll wheel / pinch).
+    const s = Math.min((rect.width-pad*2)/state.imgW, (rect.height-pad*2)/state.imgH, 1);
     state.scale = s;
     state.tx = (rect.width - state.imgW*s)/2;
     state.ty = (rect.height - state.imgH*s)/2;
@@ -1698,7 +2011,28 @@
 
     if(e.code==='Space' && !e.repeat && !spacePanPrevTool){
       spacePanPrevTool = state.tool;
+      // If a stroke/drag/lash-guide is actively in progress (mouse button
+      // still down while Space is pressed), finish it cleanly first.
+      // Previously the pointermove handler kept routing movement into the
+      // still-active stroke regardless of state.tool, so pressing Space
+      // mid-stroke looked like it "did nothing" — the tool visibly
+      // switched to 移動 but the canvas kept drawing instead of panning.
+      if(stroke) commitStroke();
+      if(imgDrag){
+        pushHistory(imgDrag.layer, imgDragBefore);
+        refreshLayerThumb(imgDrag.layer);
+        imgDrag = null; imgDragBefore = null;
+      }
+      if(lashGuide) commitLashGuide();
       state.tool = 'pan';
+      // If the mouse button is still held down (they pressed Space mid-
+      // stroke rather than before starting one), start panning from
+      // right where the pointer already is — so panning kicks in
+      // immediately instead of requiring a release-and-repress.
+      if(activePointers.size===1){
+        const p = [...activePointers.values()][0];
+        pinch = {mode:'pan1', last:{x:p.x, y:p.y}};
+      }
       document.querySelectorAll('.tool[data-tool]').forEach(b=>b.classList.remove('active'));
       const panBtn = document.querySelector('.tool[data-tool="pan"]');
       if(panBtn) panBtn.classList.add('active');
@@ -1721,6 +2055,9 @@
       const btn = document.querySelector(`.tool[data-tool="${state.tool}"]`);
       if(btn) btn.classList.add('active');
       stageWrap.style.cursor = '';
+      // Stop any in-progress space-pan drag so releasing Space doesn't leave
+      // the canvas panning under a pointer that's still held down.
+      if(pinch && pinch.mode==='pan1') pinch = null;
     }
   });
 
@@ -1729,7 +2066,18 @@
     const b = 1 + adjust.brightness/100;
     const c = 1 + adjust.contrast/100;
     const s = 1 + adjust.saturate/100;
-    return `brightness(${b}) contrast(${c}) saturate(${Math.max(0,s)}) hue-rotate(${adjust.warmth}deg) sepia(${adjust.sepia/100})`;
+    const tintFilter = adjust.tint!==0 ? ' url(#tintFilter)' : '';
+    const inv = adjust.invert ? ' invert(1)' : '';
+    return `brightness(${b}) contrast(${c}) saturate(${Math.max(0,s)}) hue-rotate(${adjust.warmth}deg) sepia(${adjust.sepia/100})${tintFilter}${inv}`;
+  }
+  // 色合い's feColorMatrix: shifts green up/down while pulling red+blue the
+  // opposite way (green vs magenta), the same axis a real white-balance
+  // tint control adjusts. Values are in feColorMatrix's own 0-1 space, so
+  // the slider's -60..60 range is scaled down to a subtle max shift.
+  function updateTintMatrix(){
+    const k = (adjust.tint/100) * 0.5;
+    const m = document.getElementById('tintMatrix');
+    if(m) m.setAttribute('values', `1 0 0 0 ${-k/2}  0 1 0 0 ${k}  0 0 1 0 ${-k/2}  0 0 0 1 0`);
   }
   function drawVignette(){
     if(!vignetteCtx) return;
@@ -1759,7 +2107,7 @@
   // whenever every value is at its default guarantees a byte-for-byte identical,
   // un-filtered image until the person actually changes something.
   function isAdjustNeutral(){
-    return adjust.brightness===0 && adjust.contrast===0 && adjust.saturate===0 && adjust.warmth===0 && adjust.sepia===0;
+    return adjust.brightness===0 && adjust.contrast===0 && adjust.saturate===0 && adjust.warmth===0 && adjust.tint===0 && adjust.sepia===0 && !adjust.invert;
   }
   // Renders photoCanvas's raw pixels into adjustCanvas — no filter baked in
   // here anymore (see applyAdjustments below for why). This still exists
@@ -1788,20 +2136,23 @@
     // blend mode/opacity — stays completely untouched and still separately
     // editable underneath.
     world.style.filter = isAdjustNeutral() ? 'none' : buildFilterString();
+    updateTintMatrix();
   }
   function syncAdjustUI(){
     document.getElementById('brSlider').value = adjust.brightness; document.getElementById('brVal').textContent = adjust.brightness;
     document.getElementById('ctSlider').value = adjust.contrast; document.getElementById('ctVal').textContent = adjust.contrast;
     document.getElementById('stSlider').value = adjust.saturate; document.getElementById('stVal').textContent = adjust.saturate;
     document.getElementById('wmSlider').value = adjust.warmth; document.getElementById('wmVal').textContent = adjust.warmth;
+    document.getElementById('tintSlider').value = adjust.tint; document.getElementById('tintVal').textContent = adjust.tint;
     document.getElementById('spSlider').value = adjust.sepia; document.getElementById('spVal').textContent = adjust.sepia;
     document.getElementById('vgSlider').value = adjust.vignette; document.getElementById('vgVal').textContent = adjust.vignette;
+    document.getElementById('invertTog').classList.toggle('on', !!adjust.invert);
   }
   function bindAdjustSlider(id, valId, key){
     document.getElementById(id).addEventListener('input', e=>{
       adjust[key] = +e.target.value;
       document.getElementById(valId).textContent = e.target.value;
-      document.querySelectorAll('.presetChip').forEach(p=>p.classList.remove('sel'));
+      document.querySelectorAll('#filterSheet .presetChip').forEach(p=>p.classList.remove('sel'));
       applyAdjustments();
     });
   }
@@ -1809,18 +2160,34 @@
   bindAdjustSlider('ctSlider','ctVal','contrast');
   bindAdjustSlider('stSlider','stVal','saturate');
   bindAdjustSlider('wmSlider','wmVal','warmth');
+  bindAdjustSlider('tintSlider','tintVal','tint');
   bindAdjustSlider('spSlider','spVal','sepia');
   bindAdjustSlider('vgSlider','vgVal','vignette');
+  document.getElementById('invertTog').addEventListener('click', ()=>{
+    adjust.invert = adjust.invert ? 0 : 1;
+    document.getElementById('invertTog').classList.toggle('on', !!adjust.invert);
+    document.querySelectorAll('#filterSheet .presetChip').forEach(p=>p.classList.remove('sel'));
+    applyAdjustments();
+  });
 
-  // ---------------- De-yellow (黄ばみ除去) ----------------
-  // Unlike 色温度 (which is a blanket hue-rotate over the whole image), this
-  // looks at each pixel's own R/G-vs-B balance and only pulls back the ones
-  // that actually read as yellowish — so skin/background yellow casts fade
-  // without shifting blues, pinks, etc. It's a real pixel edit (like blur),
-  // so it previews live while dragging and commits as one undo step on release.
+  // ---------------- De-yellow / 色かぶり除去 (color cast removal) ----------------
+  // Looks at each pixel's own channel balance and only pulls back pixels that
+  // actually read as that cast — so e.g. removing a yellow cast fades
+  // skin/background yellow without shifting blues, pinks, etc. It's a real
+  // pixel edit (like blur), so it previews live while dragging and commits
+  // as one undo step on release. The chips above pick which cast (yellow /
+  // red / green / blue) this same slider targets.
   const deyellowSlider = document.getElementById('deyellowSlider');
   const deyellowVal = document.getElementById('deyellowVal');
   let deyellowBeforeData = null, deyellowRAF = null;
+  let castMode = 'yellow';
+  document.querySelectorAll('#castModeRow .presetChip').forEach(chip=>{
+    chip.addEventListener('click', ()=>{
+      document.querySelectorAll('#castModeRow .presetChip').forEach(c=>c.classList.remove('sel'));
+      chip.classList.add('sel');
+      castMode = chip.dataset.cast;
+    });
+  });
   function applyDeyellow(baseData, amount){
     if(!photoCtx) return;
     if(amount<=0){ photoCtx.putImageData(baseData,0,0); return; }
@@ -1828,12 +2195,35 @@
     const k = amount/100;
     for(let i=0;i<data.length;i+=4){
       const r=data[i], g=data[i+1], b=data[i+2];
-      const yellow = Math.max(0, (r+g)/2 - b); // how yellow this pixel reads
-      if(yellow>0){
-        const reduce = yellow*k*0.9;
+      let castAmt, reduce;
+      if(castMode==='yellow'){
+        castAmt = Math.max(0, (r+g)/2 - b);
+        if(castAmt<=0) continue;
+        reduce = castAmt*k*0.9;
         data[i]   = Math.max(0, r - reduce*0.5);
         data[i+1] = Math.max(0, g - reduce*0.35);
         data[i+2] = Math.min(255, b + reduce*0.6);
+      } else if(castMode==='red'){
+        castAmt = Math.max(0, r - (g+b)/2);
+        if(castAmt<=0) continue;
+        reduce = castAmt*k*0.9;
+        data[i]   = Math.max(0, r - reduce*0.85);
+        data[i+1] = Math.min(255, g + reduce*0.25);
+        data[i+2] = Math.min(255, b + reduce*0.25);
+      } else if(castMode==='green'){
+        castAmt = Math.max(0, g - (r+b)/2);
+        if(castAmt<=0) continue;
+        reduce = castAmt*k*0.9;
+        data[i]   = Math.min(255, r + reduce*0.25);
+        data[i+1] = Math.max(0, g - reduce*0.85);
+        data[i+2] = Math.min(255, b + reduce*0.25);
+      } else { // blue
+        castAmt = Math.max(0, b - (r+g)/2);
+        if(castAmt<=0) continue;
+        reduce = castAmt*k*0.9;
+        data[i]   = Math.min(255, r + reduce*0.3);
+        data[i+1] = Math.min(255, g + reduce*0.3);
+        data[i+2] = Math.max(0, b - reduce*0.85);
       }
     }
     photoCtx.putImageData(new ImageData(data, baseData.width, baseData.height), 0, 0);
@@ -1905,22 +2295,241 @@
     });
   }
 
-  document.querySelectorAll('.presetChip').forEach(chip=>{
+  // ---------------- ジャギー除去 (anti-jaggy / one-click smoothing filter) ----------------
+  // A whole-photo version of the なじませ brush's idea, but implemented the
+  // simplest reliable way: draw the photo up to 2x with smoothing enabled,
+  // then back down to its original size. Each resampling pass is a mild
+  // low-pass filter, so pushing the image through two of them softens
+  // single-pixel staircase edges (aliasing/jaggies) without the heavier,
+  // more destructive uniform blur that the ぼかし tool applies.
+  // amount (0-100) blends between the untouched original and this fully
+  // smoothed result, so a light touch keeps most fine detail intact.
+  const antiJaggySlider = document.getElementById('antiJaggySlider');
+  const antiJaggyVal = document.getElementById('antiJaggyVal');
+  let antiJaggyBeforeData = null, antiJaggyRAF = null;
+  function applyAntiJaggy(baseData, amount){
+    if(!photoCtx) return;
+    photoCtx.putImageData(baseData,0,0);
+    if(amount>0){
+      const w = photoCanvas.width, h = photoCanvas.height;
+      const big = document.createElement('canvas');
+      big.width = Math.max(1, Math.round(w*2)); big.height = Math.max(1, Math.round(h*2));
+      const bctx = big.getContext('2d');
+      bctx.imageSmoothingEnabled = true; bctx.imageSmoothingQuality = 'high';
+      bctx.drawImage(photoCanvas, 0, 0, big.width, big.height);
+      const back = document.createElement('canvas');
+      back.width = w; back.height = h;
+      const rctx = back.getContext('2d');
+      rctx.imageSmoothingEnabled = true; rctx.imageSmoothingQuality = 'high';
+      rctx.drawImage(big, 0, 0, w, h);
+      photoCtx.save();
+      photoCtx.globalAlpha = Math.min(1, amount/100);
+      photoCtx.drawImage(back, 0, 0);
+      photoCtx.restore();
+    }
+    renderAdjustCanvas();
+  }
+  if(antiJaggySlider){
+    antiJaggySlider.addEventListener('pointerdown', ()=>{
+      if(!photoCtx) return;
+      antiJaggyBeforeData = photoCtx.getImageData(0,0,photoCanvas.width,photoCanvas.height);
+    });
+    antiJaggySlider.addEventListener('input', ()=>{
+      antiJaggyVal.textContent = antiJaggySlider.value;
+      if(!antiJaggyBeforeData) return;
+      if(antiJaggyRAF) cancelAnimationFrame(antiJaggyRAF);
+      antiJaggyRAF = requestAnimationFrame(()=> applyAntiJaggy(antiJaggyBeforeData, +antiJaggySlider.value));
+    });
+    antiJaggySlider.addEventListener('change', ()=>{
+      if(antiJaggyBeforeData){
+        pushHistory({id:PHOTO_ID}, antiJaggyBeforeData);
+        antiJaggyBeforeData = null;
+      }
+      antiJaggySlider.value = 0; antiJaggyVal.textContent = '0';
+      if(sheets.layers.classList.contains('show')) renderLayerList();
+    });
+  }
+
+  // ---------------- ハイライト／シャドウ／ホワイト／ブラック (tone) ----------------
+  // Each targets a different slice of the brightness range instead of the
+  // whole image at once, the way 明るさ/コントラスト do — ハイライト/ホワイト
+  // only nudge already-bright pixels, シャドウ/ブラック only nudge already-dark
+  // ones, so raising shadows can open up dark areas without blowing out
+  // anything that was already bright. Same one-shot pattern as the other
+  // pixel-edit sliders (シャープ, 色かぶり除去, etc.): live-previews while
+  // dragging, commits as one undo step on release.
+  function smoothstep(a,b,x){
+    let t = (x-a)/(b-a);
+    t = Math.max(0, Math.min(1, t));
+    return t*t*(3-2*t);
+  }
+  function applyToneSlider(baseData, amount, kind){
+    if(!photoCtx) return;
+    if(amount===0){ photoCtx.putImageData(baseData,0,0); return; }
+    const data = new Uint8ClampedArray(baseData.data);
+    const k = amount/100;
+    for(let i=0;i<data.length;i+=4){
+      const r=data[i], g=data[i+1], b=data[i+2];
+      const lum = (r+g+b)/765; // 0..1
+      let weight;
+      if(kind==='highlight') weight = smoothstep(0.45,1,lum);
+      else if(kind==='shadow') weight = smoothstep(0.55,0,lum);
+      else if(kind==='white') weight = smoothstep(0.75,1,lum);
+      else weight = smoothstep(0.25,0,lum); // black
+      const delta = k*weight*70;
+      data[i]=r+delta; data[i+1]=g+delta; data[i+2]=b+delta;
+    }
+    photoCtx.putImageData(new ImageData(data, baseData.width, baseData.height), 0, 0);
+    renderAdjustCanvas();
+  }
+  function applyVibrance(baseData, amount){
+    if(!photoCtx) return;
+    if(amount===0){ photoCtx.putImageData(baseData,0,0); return; }
+    const data = new Uint8ClampedArray(baseData.data);
+    const k = amount/100;
+    for(let i=0;i<data.length;i+=4){
+      const r=data[i], g=data[i+1], b=data[i+2];
+      const maxc = Math.max(r,g,b), avg=(r+g+b)/3;
+      const sat = (maxc-avg)/128; // roughly 0..1, how saturated this pixel already is
+      const factor = 1 + k*(1-sat)*1.1;
+      data[i]   = avg + (r-avg)*factor;
+      data[i+1] = avg + (g-avg)*factor;
+      data[i+2] = avg + (b-avg)*factor;
+    }
+    photoCtx.putImageData(new ImageData(data, baseData.width, baseData.height), 0, 0);
+    renderAdjustCanvas();
+  }
+  function applyClarity(baseData, amount){
+    if(!photoCtx) return;
+    if(amount<=0){ photoCtx.putImageData(baseData,0,0); return; }
+    const w = baseData.width, h = baseData.height;
+    // Classic clarity trick: blur at a fairly wide radius (mid-tone/large-
+    // scale contrast, not fine edges — a much bigger radius than シャープ
+    // uses), then push the original away from that blurred version. That
+    // boosts contrast between broad light/dark regions ("punch"/texture)
+    // without the ringing a small-radius sharpen gives on fine detail.
+    const src = document.createElement('canvas'); src.width=w; src.height=h;
+    src.getContext('2d').putImageData(baseData,0,0);
+    const blurred = document.createElement('canvas'); blurred.width=w; blurred.height=h;
+    const bctx = blurred.getContext('2d');
+    bctx.filter = `blur(${Math.max(2, Math.round(Math.min(w,h)*0.02))}px)`;
+    bctx.drawImage(src,0,0);
+    const s = baseData.data;
+    const b = bctx.getImageData(0,0,w,h).data;
+    const k = (amount/100)*0.9;
+    const out = new Uint8ClampedArray(s.length);
+    for(let i=0;i<s.length;i+=4){
+      out[i]   = s[i]   + (s[i]-b[i])*k;
+      out[i+1] = s[i+1] + (s[i+1]-b[i+1])*k;
+      out[i+2] = s[i+2] + (s[i+2]-b[i+2])*k;
+      out[i+3] = s[i+3];
+    }
+    photoCtx.putImageData(new ImageData(out,w,h), 0, 0);
+    renderAdjustCanvas();
+  }
+  // One helper wires up the pointerdown→input→change lifecycle shared by
+  // every one-shot 画像調整 slider (シャープ／黄ばみ／ジャギー除去 all followed
+  // this same hand-written pattern before; this just avoids repeating it
+  // six more times for ハイライト/シャドウ/ホワイト/ブラック/自然な彩度/明瞭度).
+  function wireOneShotSlider(sliderId, valId, applyFn, ...extraArgs){
+    const slider = document.getElementById(sliderId);
+    const val = document.getElementById(valId);
+    let before = null, raf = null;
+    slider.addEventListener('pointerdown', ()=>{
+      if(!photoCtx) return;
+      before = photoCtx.getImageData(0,0,photoCanvas.width,photoCanvas.height);
+    });
+    slider.addEventListener('input', ()=>{
+      val.textContent = slider.value;
+      if(!before) return;
+      if(raf) cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(()=> applyFn(before, +slider.value, ...extraArgs));
+    });
+    slider.addEventListener('change', ()=>{
+      if(before){
+        pushHistory({id:PHOTO_ID}, before);
+        before = null;
+      }
+      slider.value = 0; val.textContent = '0';
+      if(sheets.layers.classList.contains('show')) renderLayerList();
+    });
+  }
+  wireOneShotSlider('hlSlider','hlVal', applyToneSlider, 'highlight');
+  wireOneShotSlider('shSlider','shVal', applyToneSlider, 'shadow');
+  wireOneShotSlider('whSlider','whVal', applyToneSlider, 'white');
+  wireOneShotSlider('blSlider','blVal', applyToneSlider, 'black');
+  wireOneShotSlider('vibranceSlider','vibranceVal', applyVibrance);
+  wireOneShotSlider('claritySlider','clarityVal', applyClarity);
+
+  // ---------------- 目を大きく／小さく settings ----------------
+  document.querySelectorAll('#eyeBulgeModeRow .presetChip').forEach(chip=>{
     chip.addEventListener('click', ()=>{
-      document.querySelectorAll('.presetChip').forEach(p=>p.classList.remove('sel'));
+      document.querySelectorAll('#eyeBulgeModeRow .presetChip').forEach(c=>c.classList.remove('sel'));
       chip.classList.add('sel');
-      Object.assign(adjust, PRESETS[chip.dataset.preset]);
-      syncAdjustUI();
-      applyAdjustments();
+      state.eyeBulgeMode = chip.dataset.eyemode;
     });
   });
+  bindRange('eyeBulgeRadiusSlider','eyeBulgeRadiusVal','eyeBulgeRadius','');
+  bindRange('eyeBulgeStrengthSlider','eyeBulgeStrengthVal','eyeBulgeStrength','');
+  function updateEyeBulgePreview(){
+    const el = document.getElementById('eyeBulgeRadiusPreview');
+    if(!el) return;
+    const shown = Math.min(96, Math.max(6, state.eyeBulgeRadius*0.4));
+    el.style.width = shown+'px';
+    el.style.height = shown+'px';
+  }
+  document.getElementById('eyeBulgeRadiusSlider').addEventListener('input', updateEyeBulgePreview);
+  updateEyeBulgePreview();
+
+  // BUGFIX: this used to select ALL `.presetChip` elements on the whole
+  // page — which, once other chip rows (upscale scale, export format,
+  // color-cast, eye size, etc.) were added, meant clicking ANY of those
+  // unrelated chips also fired this preset-filter handler and cleared the
+  // 'sel' highlight off every other chip row's current selection. Scoping
+  // this to #filterSheet keeps it to just the フィルター tab's chips, across
+  // all of its category rows (ベーシック/Natural/Soft/Vintage/Warm/Cool).
+  let activeFilterKey = 'normal';
+  // Blends between ノーマル (untouched) and the target preset by `t` — this is
+  // what lets 強さ act as a single dial over any selected filter instead of
+  // each filter only ever being all-or-nothing.
+  function lerpAdjust(t){
+    const target = PRESETS[activeFilterKey] || PRESETS.normal;
+    for(const k in PRESETS.normal){
+      if(k==='invert'){ adjust.invert = t>0.5 ? target.invert : PRESETS.normal.invert; continue; }
+      adjust[k] = PRESETS.normal[k] + (target[k]-PRESETS.normal[k])*t;
+    }
+  }
+  function applyFilterBlend(){
+    lerpAdjust((+document.getElementById('filterIntensitySlider').value)/100);
+    syncAdjustUI();
+    applyAdjustments();
+  }
+  document.querySelectorAll('#filterSheet .presetChip').forEach(chip=>{
+    chip.addEventListener('click', ()=>{
+      document.querySelectorAll('#filterSheet .presetChip').forEach(p=>p.classList.remove('sel'));
+      chip.classList.add('sel');
+      activeFilterKey = chip.dataset.preset;
+      const slider = document.getElementById('filterIntensitySlider');
+      slider.value = 100; document.getElementById('filterIntensityVal').textContent = '100';
+      applyFilterBlend();
+    });
+  });
+  document.getElementById('filterIntensitySlider').addEventListener('input', e=>{
+    document.getElementById('filterIntensityVal').textContent = e.target.value;
+    applyFilterBlend();
+  });
   document.getElementById('resetAdjustBtn').addEventListener('click', ()=>{
+    activeFilterKey = 'normal';
+    const slider = document.getElementById('filterIntensitySlider');
+    slider.value = 100; document.getElementById('filterIntensityVal').textContent = '100';
     Object.assign(adjust, PRESETS.normal);
     syncAdjustUI(); applyAdjustments();
-    document.querySelectorAll('.presetChip').forEach(p=>p.classList.remove('sel'));
-    document.querySelector('.presetChip[data-preset="normal"]').classList.add('sel');
+    document.querySelectorAll('#filterSheet .presetChip').forEach(p=>p.classList.remove('sel'));
+    document.querySelector('#filterSheet .presetChip[data-preset="normal"]').classList.add('sel');
     showToast('調整をリセットしました');
   });
+  document.getElementById('filterToolBtn').addEventListener('click', ()=>openSheet('filter'));
+  document.getElementById('filterCloseBtn').addEventListener('click', closeSheets);
 
   function rotate90(){
     if(!state.imgW) return;
@@ -2085,6 +2694,65 @@
     return hex;
   }
 
+  // ---------------- 目を大きく／小さく (eye bulge/pinch warp) ----------------
+  // A manual spot-warp: tap (or drag) over an eye and pixels within the
+  // brush radius are remapped outward from the tap point (bigger) or pulled
+  // inward (smaller) — the same math a "liquify" bulge/pinch tool uses.
+  // There's no face detection here, so it's aimed by hand rather than
+  // auto-applied to detected eyes; the radius/strength sliders in the
+  // settings sheet control how wide and how strong each tap is.
+  function bulgeStamp(ctx, cx, cy, radius, strength, mode){
+    const w = ctx.canvas.width, h = ctx.canvas.height;
+    const bx0 = Math.max(0, Math.floor(cx-radius)), by0 = Math.max(0, Math.floor(cy-radius));
+    const bx1 = Math.min(w, Math.ceil(cx+radius)), by1 = Math.min(h, Math.ceil(cy+radius));
+    const bw = bx1-bx0, bh = by1-by0;
+    if(bw<=0 || bh<=0) return;
+    const snap = ctx.getImageData(bx0,by0,bw,bh);
+    const sd = snap.data;
+    const out = new Uint8ClampedArray(sd.length);
+    // bigger: power>1 — output pixel at radius n samples from a point
+    // CLOSER to center than it is (n^power < n), so the center area's
+    // content is stretched out to fill more space = magnified/bigger.
+    // smaller: power<1 — the opposite, samples from FARTHER out, pulling
+    // outside content inward = pinched/smaller.
+    const power = mode==='smaller' ? 1/(1+strength) : 1+strength;
+    function sampleBilinear(sx, sy){
+      sx = Math.max(0, Math.min(bw-1.001, sx));
+      sy = Math.max(0, Math.min(bh-1.001, sy));
+      const x0=Math.floor(sx), y0=Math.floor(sy), x1=x0+1, y1=y0+1;
+      const fx=sx-x0, fy=sy-y0;
+      const idx=(x,y)=>(y*bw+x)*4;
+      const i00=idx(x0,y0), i10=idx(x1,y0), i01=idx(x0,y1), i11=idx(x1,y1);
+      const out4=[0,0,0,0];
+      for(let c=0;c<4;c++){
+        out4[c] = sd[i00+c]*(1-fx)*(1-fy) + sd[i10+c]*fx*(1-fy) + sd[i01+c]*(1-fx)*fy + sd[i11+c]*fx*fy;
+      }
+      return out4;
+    }
+    for(let y=0;y<bh;y++){
+      for(let x=0;x<bw;x++){
+        const gx = bx0+x, gy = by0+y;
+        const dx = gx-cx, dy = gy-cy;
+        const dist = Math.sqrt(dx*dx+dy*dy);
+        const oi = (y*bw+x)*4;
+        if(dist>=radius){
+          out[oi]=sd[oi]; out[oi+1]=sd[oi+1]; out[oi+2]=sd[oi+2]; out[oi+3]=sd[oi+3];
+          continue;
+        }
+        const n = dist/radius;
+        const srcDist = Math.pow(n, power)*radius;
+        let sx, sy;
+        if(dist<0.0001){ sx=cx; sy=cy; } else { sx = cx+(dx/dist)*srcDist; sy = cy+(dy/dist)*srcDist; }
+        const col = sampleBilinear(sx-bx0, sy-by0);
+        out[oi]=col[0]; out[oi+1]=col[1]; out[oi+2]=col[2]; out[oi+3]=col[3];
+      }
+    }
+    ctx.putImageData(new ImageData(out,bw,bh), bx0, by0);
+  }
+  function applyEyeBulgeAt(layer, cx, cy){
+    bulgeStamp(layer.ctx, cx, cy, state.eyeBulgeRadius, state.eyeBulgeStrength/100, state.eyeBulgeMode);
+  }
+
   // ---------------- Pointer handling ----------------
   function redrawMovableLayer(layer){
     if(layer.type==='text') redrawTextLayer(layer); else redrawImageLayer(layer);
@@ -2094,6 +2762,7 @@
   let stroke = null;
   let justPinched = false;
   let imgDrag = null, imgDragBefore = null; // active drag/scale of a collage image layer
+  let eyeBulgeSession = null, eyeBulgeBeforeData = null; // active 目を大きく/小さく gesture
 
   function dist(a,b){ return Math.hypot(a.x-b.x, a.y-b.y); }
   function mid(a,b){ return {x:(a.x+b.x)/2, y:(a.y+b.y)/2}; }
@@ -2113,7 +2782,7 @@
     activePointers.set(e.pointerId, {x:e.clientX, y:e.clientY, pressure:e.pressure, type:e.pointerType});
 
     if(activePointers.size === 1 && !justPinched){
-      if(state.tool==='pen' || state.tool==='eraser' || state.tool==='blur' || state.tool==='smudge'){
+      if(state.tool==='pen' || state.tool==='eraser' || state.tool==='blur' || state.tool==='smudge' || state.tool==='smooth'){
         startStroke(e);
       } else if(state.tool==='lash'){
         startLashGuide(e);
@@ -2136,6 +2805,15 @@
         } else {
           showToast('動かす写真・文字レイヤーをレイヤー一覧で選んでね');
         }
+      } else if(state.tool==='eyebulge'){
+        const layer = getActiveLayer();
+        if(layer){
+          eyeBulgeBeforeData = layer.ctx.getImageData(0,0,layer.canvas.width,layer.canvas.height);
+          eyeBulgeSession = { layer };
+          const cp = screenToCanvas(e.clientX, e.clientY);
+          applyEyeBulgeAt(layer, cp.x, cp.y);
+          if(layer.isPhoto) renderAdjustCanvas(); else refreshLayerThumb(layer);
+        }
       }
     } else if(activePointers.size === 2){
       if(stroke){ cancelStroke(); }
@@ -2150,7 +2828,15 @@
   });
 
   stageWrap.addEventListener('pointermove', e=>{
-    if(!activePointers.has(e.pointerId)) return;
+    if(!activePointers.has(e.pointerId)){
+      // Hover preview — mouse only, since touch/pen only ever fire
+      // pointermove while actually in contact with the screen. Lets PC
+      // users see the exact brush/tool size circle before they click,
+      // instead of only seeing it appear once they've already started
+      // drawing.
+      if(e.pointerType==='mouse') updateCursor(e);
+      return;
+    }
     activePointers.set(e.pointerId, {x:e.clientX, y:e.clientY, pressure:e.pressure, type:e.pointerType});
     updateCursor(e);
 
@@ -2168,6 +2854,10 @@
       imgDrag.layer.imgTransform.x = imgDrag.startX + dx;
       imgDrag.layer.imgTransform.y = imgDrag.startY + dy;
       redrawMovableLayer(imgDrag.layer);
+    } else if(activePointers.size === 1 && state.tool==='eyebulge' && eyeBulgeSession){
+      const cp = screenToCanvas(e.clientX, e.clientY);
+      applyEyeBulgeAt(eyeBulgeSession.layer, cp.x, cp.y);
+      if(eyeBulgeSession.layer.isPhoto) renderAdjustCanvas(); else refreshLayerThumb(eyeBulgeSession.layer);
     } else if(activePointers.size === 1 && pinch && pinch.mode==='pan1'){
       const dx = e.clientX - pinch.last.x, dy = e.clientY - pinch.last.y;
       state.tx += dx; state.ty += dy;
@@ -2205,6 +2895,12 @@
         refreshLayerThumb(imgDrag.layer);
         imgDrag = null; imgDragBefore = null;
       }
+      if(eyeBulgeSession){
+        pushHistory(eyeBulgeSession.layer, eyeBulgeBeforeData);
+        if(eyeBulgeSession.layer.isPhoto) renderAdjustCanvas(); else refreshLayerThumb(eyeBulgeSession.layer);
+        if(sheets.layers.classList.contains('show')) renderLayerList();
+        eyeBulgeSession = null; eyeBulgeBeforeData = null;
+      }
       if(state.tool==='eyedropper' && eyedropSampleCtx){
         eyedropSampleCtx = null; eyedropSampleCanvas = null;
         showToast('スポイトで色を取得しました 🎨');
@@ -2223,12 +2919,16 @@
   stageWrap.addEventListener('pointerleave', e=>{ if(activePointers.size<=1) cursorDot.style.display='none'; });
 
   function updateCursor(e){
-    if(state.tool==='pen'||state.tool==='eraser'||state.tool==='blur'||state.tool==='smudge'||state.tool==='lash'){
+    // Shown for a genuine single-touch/pen drag (activePointers.size===1) OR
+    // a plain mouse hover with nothing pressed (activePointers.size===0,
+    // pointerType 'mouse') — but not mid-pinch/two-finger gestures.
+    const showable = activePointers.size===1 || (activePointers.size===0 && e.pointerType==='mouse');
+    if(state.tool==='pen'||state.tool==='eraser'||state.tool==='blur'||state.tool==='smudge'||state.tool==='smooth'||state.tool==='lash'||state.tool==='eyebulge'){
       cursorDot.classList.remove('eyedrop');
       const rect = stageWrap.getBoundingClientRect();
       const px = (e.clientX-rect.left), py=(e.clientY-rect.top);
-      const sizePx = (state.tool==='blur' ? state.blurSize : state.tool==='smudge' ? state.smudgeSize : state.tool==='eraser' ? state.eraserSize : state.tool==='lash' ? Math.max(12, state.lashLength*0.55) : state.size)*state.scale;
-      cursorDot.style.display = activePointers.size===1 ? 'block':'none';
+      const sizePx = (state.tool==='blur' ? state.blurSize : state.tool==='smudge' ? state.smudgeSize : state.tool==='smooth' ? state.smoothSize : state.tool==='eraser' ? state.eraserSize : state.tool==='lash' ? Math.max(12, state.lashLength*0.55) : state.tool==='eyebulge' ? state.eyeBulgeRadius*2 : state.size)*state.scale;
+      cursorDot.style.display = showable ? 'block':'none';
       cursorDot.style.background = 'transparent';
       cursorDot.style.width = sizePx+'px';
       cursorDot.style.height = sizePx+'px';
@@ -2238,7 +2938,7 @@
       cursorDot.classList.add('eyedrop');
       const rect = stageWrap.getBoundingClientRect();
       const px = (e.clientX-rect.left), py=(e.clientY-rect.top-40);
-      cursorDot.style.display = activePointers.size===1 ? 'block':'none';
+      cursorDot.style.display = showable ? 'block':'none';
       cursorDot.style.width='34px'; cursorDot.style.height='34px';
       cursorDot.style.left = px+'px'; cursorDot.style.top = py+'px';
       cursorDot.style.background = state.color;
@@ -2287,7 +2987,7 @@
     const pr = pressureOf(e);
     stroke = {
       layer,
-      before: (state.tool!=='blur' && state.tool!=='smudge') ? layer.ctx.getImageData(0,0,layer.canvas.width, layer.canvas.height) : null,
+      before: (state.tool!=='blur' && state.tool!=='smudge' && state.tool!=='smooth') ? layer.ctx.getImageData(0,0,layer.canvas.width, layer.canvas.height) : null,
       raw: {x:cp.x, y:cp.y},
       smooth: {x:cp.x, y:cp.y},
       points: [{x:cp.x, y:cp.y, p:pr, t:performance.now()}],
@@ -2295,7 +2995,7 @@
     };
     stroke.scratch.width = layer.canvas.width; stroke.scratch.height = layer.canvas.height;
     stroke.scratchCtx = stroke.scratch.getContext('2d');
-    if(state.tool!=='blur' && state.tool!=='smudge'){
+    if(state.tool!=='blur' && state.tool!=='smudge' && state.tool!=='smooth'){
       ensurePreviewCanvas();
       insertPreviewFor(layer);
       previewCanvas.style.opacity = layer.opacity;
@@ -2381,8 +3081,8 @@
       previewCtx.globalCompositeOperation='destination-out';
       previewCtx.globalAlpha = state.eraserOpacity/100;
       previewCtx.drawImage(stroke.scratch,0,0);
-    } else if(state.tool==='blur'){
-      // handled fully by the blur stroke hooks during move; nothing to composite here
+    } else if(state.tool==='blur' || state.tool==='smooth'){
+      // handled fully by the blur/smooth stroke hooks during move; nothing to composite here
     } else {
       previewCtx.globalAlpha = state.opacity/100;
       colorizeAndDraw(previewCtx, stroke.scratch, state.color, state.brushType);
@@ -2653,6 +3353,9 @@
   // active — mirrors how pen/eraser record `stroke.before`, so blur now shares
   // the same one-target undo/redo model instead of a special multi-canvas one.
   let blurBeforeData = null;
+  // Same idea, for the なじませ (edge-aware smooth) tool below.
+  let smoothSession = null;
+  let smoothBeforeData = null;
 
   function commitStroke(){
     if(!stroke) return;
@@ -2661,6 +3364,15 @@
       if(blurBeforeData){
         pushHistory(stroke.layer, blurBeforeData);
         blurBeforeData = null;
+        if(stroke.layer.isPhoto) renderAdjustCanvas();
+        else refreshLayerThumb(stroke.layer);
+        if(sheets.layers.classList.contains('show')) renderLayerList();
+      }
+    } else if(state.tool==='smooth'){
+      smoothSession = null;
+      if(smoothBeforeData){
+        pushHistory(stroke.layer, smoothBeforeData);
+        smoothBeforeData = null;
         if(stroke.layer.isPhoto) renderAdjustCanvas();
         else refreshLayerThumb(stroke.layer);
         if(sheets.layers.classList.contains('show')) renderLayerList();
@@ -2693,6 +3405,13 @@
         if(stroke.layer.isPhoto) renderAdjustCanvas();
       }
       blurBeforeData = null;
+    } else if(state.tool==='smooth'){
+      smoothSession = null;
+      if(smoothBeforeData){
+        stroke.layer.ctx.putImageData(smoothBeforeData,0,0);
+        if(stroke.layer.isPhoto) renderAdjustCanvas();
+      }
+      smoothBeforeData = null;
     } else {
       // layer.ctx itself was never modified during the stroke (live preview lived on
       // previewCanvas), so there's nothing to restore on it — just reveal it again.
@@ -3087,6 +3806,137 @@
     _continueStroke(e);
   };
 
+  // ---------------- なじませ (edge-aware smoothing) ----------------
+  // Unlike ぼかし (a uniform blur), this only softens pixels that sit on a
+  // hard local edge — exactly the "staircase" jaggy silhouette along hair
+  // strands etc. in stylized game renders — while leaving flat, already-
+  // smooth areas close to untouched. That's the point of a separate tool:
+  // ぼかし blurs everything under the brush equally (great for skin, but it
+  // melts fine hair detail too); this instead measures local contrast per
+  // pixel and only blends in the blurred version where that contrast is
+  // high, so brushing over a strand's jagged edge cleans it up without
+  // turning the strand itself, or the background, to mush.
+  function computeEdgeMask(source){
+    const w = source.width, h = source.height;
+    const data = source.getContext('2d').getImageData(0,0,w,h).data;
+    const lum = new Float32Array(w*h);
+    for(let i=0,p=0; i<data.length; i+=4,p++){
+      lum[p] = 0.299*data[i] + 0.587*data[i+1] + 0.114*data[i+2];
+    }
+    const out = new Uint8ClampedArray(w*h*4);
+    for(let y=0;y<h;y++){
+      for(let x=0;x<w;x++){
+        const p = y*w+x;
+        const gx = (x>0 && x<w-1) ? (lum[p+1]-lum[p-1]) : 0;
+        const gy = (y>0 && y<h-1) ? (lum[p+w]-lum[p-w]) : 0;
+        const mag = Math.min(255, Math.sqrt(gx*gx+gy*gy)*2.2);
+        const o = p*4;
+        out[o]=out[o+1]=out[o+2]=255; out[o+3]=mag;
+      }
+    }
+    const c = document.createElement('canvas'); c.width=w; c.height=h;
+    c.getContext('2d').putImageData(new ImageData(out,w,h),0,0);
+    return c;
+  }
+  // Call once when a smooth stroke starts. Shares the same coverage/stamp
+  // mechanism as blur (via blurStampAt, reused as-is below) but adds an
+  // edgeMask alongside the blurred copy of the source.
+  function smoothStrokeSetup(target, diameter, strength){
+    const w = target.canvas.width, h = target.canvas.height;
+    const factor = Math.max(0.01, strength/100);
+    const radius = Math.max(2, diameter/2);
+
+    const source = document.createElement('canvas');
+    source.width = w; source.height = h;
+    source.getContext('2d').drawImage(target.canvas,0,0);
+
+    const blurPx = Math.max(0.6, factor*radius*0.35);
+    const blurredFull = document.createElement('canvas');
+    blurredFull.width = w; blurredFull.height = h;
+    const bctx = blurredFull.getContext('2d');
+    bctx.filter = `blur(${blurPx}px)`;
+    bctx.drawImage(source,0,0);
+    bctx.filter = 'none';
+
+    const edgeMask = computeEdgeMask(source);
+    const coverage = document.createElement('canvas');
+    coverage.width = w; coverage.height = h;
+
+    return {
+      w, h, source, blurredFull, edgeMask, coverage,
+      maxAlpha: Math.min(0.95, 0.08 + factor*0.8),
+      minX: w, minY: h, maxX: 0, maxY: 0,
+    };
+  }
+  // Same idea as blurRenderFrame, but the blend amount per pixel is also
+  // weighted by that pixel's edge strength, so flat areas only get a very
+  // faint residual touch while jaggy edges get the full effect.
+  function smoothRenderFrame(target, session){
+    const bx0 = Math.max(0, Math.floor(session.minX));
+    const by0 = Math.max(0, Math.floor(session.minY));
+    const bx1 = Math.min(session.w, Math.ceil(session.maxX));
+    const by1 = Math.min(session.h, Math.ceil(session.maxY));
+    const bw = bx1-bx0, bh = by1-by0;
+    if(bw<=0 || bh<=0) return;
+
+    const s = session.source.getContext('2d').getImageData(bx0,by0,bw,bh).data;
+    const b = session.blurredFull.getContext('2d').getImageData(bx0,by0,bw,bh).data;
+    const c = session.coverage.getContext('2d').getImageData(bx0,by0,bw,bh).data;
+    const e = session.edgeMask.getContext('2d').getImageData(bx0,by0,bw,bh).data;
+    const out = new Uint8ClampedArray(s.length);
+    for(let i=0;i<s.length;i+=4){
+      const cov = c[i+3]/255;
+      if(cov<=0){
+        out[i]=s[i]; out[i+1]=s[i+1]; out[i+2]=s[i+2]; out[i+3]=s[i+3];
+        continue;
+      }
+      const edge = e[i+3]/255;
+      const t = cov * (0.08 + 0.92*edge);
+      out[i]   = s[i]  *(1-t) + b[i]  *t;
+      out[i+1] = s[i+1]*(1-t) + b[i+1]*t;
+      out[i+2] = s[i+2]*(1-t) + b[i+2]*t;
+      out[i+3] = s[i+3]*(1-t) + b[i+3]*t;
+    }
+    target.ctx.putImageData(new ImageData(out, bw, bh), bx0, by0);
+  }
+
+  // hook smooth into continueStroke/startStroke without disturbing existing code paths
+  const _startStroke3 = startStroke, _continueStroke3 = continueStroke;
+  startStroke = function(e){
+    _startStroke3(e);
+    if(state.tool==='smooth' && stroke){
+      const target = stroke.layer;
+      smoothBeforeData = target.ctx.getImageData(0,0,target.canvas.width,target.canvas.height);
+      smoothSession = smoothStrokeSetup(target, state.smoothSize, state.smoothStrength);
+      const cp = screenToCanvas(e.clientX, e.clientY);
+      blurStampAt(smoothSession, cp.x, cp.y, state.smoothSize);
+      smoothRenderFrame(target, smoothSession);
+      if(target.isPhoto) renderAdjustCanvas();
+    }
+  };
+  continueStroke = function(e){
+    if(state.tool==='smooth' && stroke){
+      const target = stroke.layer;
+      const cp = screenToCanvas(e.clientX, e.clientY);
+      const k = 1/(1+state.stabilization*1.6);
+      stroke.smooth.x += (cp.x - stroke.smooth.x)*k;
+      stroke.smooth.y += (cp.y - stroke.smooth.y)*k;
+      const last = stroke.points[stroke.points.length-1];
+      const segDist = Math.hypot(stroke.smooth.x-last.x, stroke.smooth.y-last.y);
+      const stepSize = Math.max(4, state.smoothSize*0.18);
+      const steps = Math.max(1, Math.round(segDist/stepSize));
+      for(let i=1;i<=steps;i++){
+        const t=i/steps;
+        blurStampAt(smoothSession, last.x+(stroke.smooth.x-last.x)*t, last.y+(stroke.smooth.y-last.y)*t, state.smoothSize);
+      }
+      smoothRenderFrame(target, smoothSession);
+      if(target.isPhoto) renderAdjustCanvas();
+      stroke.points.push({x:stroke.smooth.x, y:stroke.smooth.y, p:1, t:performance.now()});
+      return;
+    }
+    _continueStroke3(e);
+  };
+
   // ---------------- 指でなぞる (smudge) ----------------
   // This is a genuinely different tool from ぼかし, even though both end up
   // softening things: blur averages a pixel with its neighbours in place;
@@ -3266,10 +4116,13 @@
     eraser: document.getElementById('eraserSheet'),
     blur: document.getElementById('blurSheet'),
     smudge: document.getElementById('smudgeSheet'),
+    smooth: document.getElementById('smoothSheet'),
+    eyebulge: document.getElementById('eyeBulgeSheet'),
     lash: document.getElementById('lashSheet'),
     color: document.getElementById('colorSheet'),
     layers: document.getElementById('layersSheet'),
     adjust: document.getElementById('adjustSheet'),
+    filter: document.getElementById('filterSheet'),
     size: document.getElementById('sizeSheet'),
     export: document.getElementById('exportSheet'),
     text: document.getElementById('textSheet'),
@@ -3279,18 +4132,10 @@
     Object.values(sheets).forEach(s=>s.classList.remove('show'));
     sheets[name].classList.add('show');
     backdrop.classList.add('show');
-    // 画像調整 needs to compare against the actual photo while sliders move,
-    // so unlike other sheets, don't let the (otherwise invisible) backdrop
-    // swallow touches over the canvas — let pinch/pan reach it normally so
-    // the whole photo stays reachable even though the tab covers part of the
-    // screen. The tab has its own ✕ button for closing since tapping the
-    // photo itself no longer does that while this sheet is open.
-    backdrop.classList.toggle('passthrough', name==='adjust');
   }
   function closeSheets(){
     Object.values(sheets).forEach(s=>s.classList.remove('show'));
     backdrop.classList.remove('show');
-    backdrop.classList.remove('passthrough');
   }
   backdrop.addEventListener('click', closeSheets);
   document.getElementById('adjustCloseBtn').addEventListener('click', closeSheets);
@@ -3301,19 +4146,21 @@
   function updateBrushBtnLabel(){
     const label = document.querySelector('#brushToolBtn span');
     if(!label) return;
-    label.textContent = state.tool==='blur' ? 'ぼかし設定' : state.tool==='smudge' ? 'なぞる設定' : state.tool==='eraser' ? '消しゴム設定' : state.tool==='lash' ? 'まつ毛設定' : 'ブラシ設定';
+    label.textContent = state.tool==='blur' ? 'ぼかし設定' : state.tool==='smudge' ? 'なぞる設定' : state.tool==='smooth' ? 'なじませ設定' : state.tool==='eyebulge' ? '目サイズ設定' : state.tool==='eraser' ? '消しゴム設定' : state.tool==='lash' ? 'まつ毛設定' : 'ブラシ設定';
   }
   function targetSheetForTool(){
     if(state.tool==='blur') return 'blur';
     if(state.tool==='smudge') return 'smudge';
+    if(state.tool==='smooth') return 'smooth';
+    if(state.tool==='eyebulge') return 'eyebulge';
     if(state.tool==='eraser') return 'eraser';
     if(state.tool==='lash') return 'lash';
     return 'brush';
   }
-  document.getElementById('brushToolBtn').addEventListener('click', ()=>{ openSheet(targetSheetForTool()); updateBrushPreview(); updateBlurTargetLabel(); updateEraserPreview(); updateLashPreview(); });
+  document.getElementById('brushToolBtn').addEventListener('click', ()=>{ openSheet(targetSheetForTool()); updateBrushPreview(); updateBlurTargetLabel(); updateEraserPreview(); updateLashPreview(); updateSmoothPreview(); updateEyeBulgePreview(); });
   document.getElementById('colorToolBtn').addEventListener('click', ()=>openSheet('color'));
   document.getElementById('layersHeaderBtn').addEventListener('click', ()=>{ renderLayerList(); openSheet('layers'); });
-  document.getElementById('adjustToolBtn').addEventListener('click', ()=>{ updateUpscaleLabel(); openSheet('adjust'); });
+  document.getElementById('adjustToolBtn').addEventListener('click', ()=>{ updateUpscaleLabel(); updateBlurTargetLabel(); openSheet('adjust'); });
   document.getElementById('helpBtn').addEventListener('click', ()=>{ openSheet('help'); });
 
 
@@ -3329,8 +4176,14 @@
     const W = canvas.width, H = canvas.height;
     ctx.clearRect(0,0,W,H);
 
-    const scale = (H*0.5) / 120; // 120 = max value of the size slider
-    const w = Math.max(1, state.size*scale);
+    // Match the actual on-screen thickness: a stroke of state.size (in image
+    // pixels) is drawn on the real canvas, then that canvas is CSS-scaled by
+    // state.scale (the current zoom level) — so what actually appears on
+    // screen is state.size*state.scale screen pixels wide. Previously this
+    // preview used a fixed ratio unrelated to the current zoom, so at any
+    // zoom other than the one that ratio happened to match, the sample here
+    // looked thinner (or thicker) than the line you actually got on canvas.
+    const w = Math.max(0.5, state.size*(state.scale||1));
     const n = 24;
     const pts = [];
     for(let i=0;i<=n;i++){
@@ -3367,16 +4220,49 @@
     const el = document.getElementById(id), vl = document.getElementById(valId);
     el.addEventListener('input', ()=>{ state[key] = +el.value; vl.textContent = el.value + (suffix||''); updateBrushPreview(); });
   }
-  bindRange('sizeSlider','sizeVal','size','');
+  // A plain linear slider forces a trade-off between fine control at small
+  // sizes and enough headroom at large sizes — widen the range and small
+  // values become nearly impossible to land on exactly (one pixel of drag
+  // covers several units); narrow it and there's no room for a big brush.
+  // This maps the slider's raw 0–1000 track through a power curve instead
+  // of straight to the value, so the first chunk of the track is stretched
+  // out over the small end of the range (fine control for thin brushes)
+  // while the rest of the track covers the large end more coarsely (which
+  // doesn't need pixel-precision anyway).
+  function bindPowerRange(id, valId, key, min, max, power, decimals){
+    const el = document.getElementById(id), vl = document.getElementById(valId);
+    const RAW_MAX = 1000;
+    function actualToRaw(actual){
+      const t = Math.pow(Math.max(0, Math.min(1, (actual-min)/(max-min))), 1/power);
+      return Math.round(t*RAW_MAX);
+    }
+    function rawToActual(raw){
+      const t = Math.max(0, Math.min(1, raw/RAW_MAX));
+      const v = min + (max-min)*Math.pow(t, power);
+      const f = Math.pow(10, decimals);
+      return Math.round(v*f)/f;
+    }
+    el.value = actualToRaw(state[key]);
+    vl.textContent = state[key];
+    el.addEventListener('input', ()=>{
+      const actual = rawToActual(+el.value);
+      state[key] = actual;
+      vl.textContent = actual;
+      updateBrushPreview();
+    });
+  }
+  bindPowerRange('sizeSlider','sizeVal','size', 0.3, 120, 2.4, 1);
   bindRange('opSlider','opVal','opacity','');
   bindRange('softSlider','softVal','softness','');
   bindRange('stabSlider','stabVal','stabilization','');
   bindRange('taperInSlider','taperInVal','taperIn','%');
   bindRange('taperOutSlider','taperOutVal','taperOut','%');
-  bindRange('blurSizeSlider','blurSizeVal','blurSize','');
+  bindPowerRange('blurSizeSlider','blurSizeVal','blurSize', 8, 260, 2.2, 0);
   bindRange('blurStrengthSlider','blurStrengthVal','blurStrength','');
-  bindRange('smudgeSizeSlider','smudgeSizeVal','smudgeSize','');
+  bindPowerRange('smudgeSizeSlider','smudgeSizeVal','smudgeSize', 6, 260, 2.2, 0);
   bindRange('smudgeStrengthSlider','smudgeStrengthVal','smudgeStrength','');
+  bindPowerRange('smoothSizeSlider','smoothSizeVal','smoothSize', 6, 260, 2.2, 0);
+  bindRange('smoothStrengthSlider','smoothStrengthVal','smoothStrength','');
   bindRange('glitterSizeSlider','glitterSizeVal','glitterSize','');
   bindRange('glitterDensitySlider','glitterDensityVal','glitterDensity','');
   function updateBlurPreview(){
@@ -3397,6 +4283,15 @@
   }
   document.getElementById('smudgeSizeSlider').addEventListener('input', updateSmudgePreview);
   updateSmudgePreview();
+  function updateSmoothPreview(){
+    const el = document.getElementById('smoothSizePreview');
+    if(!el) return;
+    const shown = Math.min(96, Math.max(6, state.smoothSize*0.4));
+    el.style.width = shown+'px';
+    el.style.height = shown+'px';
+  }
+  document.getElementById('smoothSizeSlider').addEventListener('input', updateSmoothPreview);
+  updateSmoothPreview();
 
   // ---- Eyelash assist sheet bindings ----
   // Draws a sample eyelid curve at the current settings so density/length/
@@ -3488,11 +4383,20 @@
   }
   const eraserSizeSlider = document.getElementById('eraserSizeSlider');
   const eraserSizeVal = document.getElementById('eraserSizeVal');
-  eraserSizeSlider.addEventListener('input', ()=>{
-    state.eraserSize = +eraserSizeSlider.value;
-    eraserSizeVal.textContent = eraserSizeSlider.value;
-    updateEraserPreview();
-  });
+  {
+    const ERASER_MIN=1, ERASER_MAX=150, ERASER_POWER=2.2, RAW_MAX=1000;
+    const actualToRaw = a => Math.round(Math.pow(Math.max(0,Math.min(1,(a-ERASER_MIN)/(ERASER_MAX-ERASER_MIN))), 1/ERASER_POWER)*RAW_MAX);
+    const rawToActual = r => Math.round(ERASER_MIN + (ERASER_MAX-ERASER_MIN)*Math.pow(Math.max(0,Math.min(1,r/RAW_MAX)), ERASER_POWER));
+    eraserSizeSlider.min = 0; eraserSizeSlider.max = RAW_MAX; eraserSizeSlider.step = 1;
+    eraserSizeSlider.value = actualToRaw(state.eraserSize);
+    eraserSizeVal.textContent = state.eraserSize;
+    eraserSizeSlider.addEventListener('input', ()=>{
+      const actual = rawToActual(+eraserSizeSlider.value);
+      state.eraserSize = actual;
+      eraserSizeVal.textContent = actual;
+      updateEraserPreview();
+    });
+  }
   const eraserOpSlider = document.getElementById('eraserOpSlider');
   const eraserOpVal = document.getElementById('eraserOpVal');
   eraserOpSlider.addEventListener('input', ()=>{
@@ -3699,15 +4603,12 @@
   function mergeLayerIntoPhoto(layer){
     const before = photoCtx.getImageData(0,0,photoCanvas.width,photoCanvas.height);
     const hasBlend = layer.blendMode && layer.blendMode!=='normal';
-    const amt = Math.max(0, Math.min(100, layer.blendAmount==null?100:layer.blendAmount))/100;
-    const partial = hasBlend && amt<0.999;
     photoCtx.save();
-    if(partial){
-      photoCtx.globalAlpha = layer.opacity;
-      photoCtx.globalCompositeOperation = 'source-over';
-      photoCtx.drawImage(layer.canvas,0,0);
-    }
-    photoCtx.globalAlpha = partial ? layer.opacity*amt : layer.opacity;
+    // Canvas globalAlpha + globalCompositeOperation fades a blend mode
+    // cleanly on its own (0 = invisible, 1 = full effect) — no need for
+    // the old two-pass "opaque normal paste, then blend on top" trick,
+    // which is what made a low 不透明度 look stronger than a high one.
+    photoCtx.globalAlpha = layer.opacity;
     photoCtx.globalCompositeOperation = hasBlend ? layer.blendMode : 'source-over';
     photoCtx.drawImage(layer.canvas,0,0);
     photoCtx.restore();
@@ -3727,15 +4628,8 @@
     if(idx===0){ mergeLayerIntoPhoto(layer); return; }
     const below = layers[idx-1];
     const hasBlend = layer.blendMode && layer.blendMode!=='normal';
-    const amt = Math.max(0, Math.min(100, layer.blendAmount==null?100:layer.blendAmount))/100;
-    const partial = hasBlend && amt<0.999;
     below.ctx.save();
-    if(partial){
-      below.ctx.globalAlpha = layer.opacity;
-      below.ctx.globalCompositeOperation = 'source-over';
-      below.ctx.drawImage(layer.canvas,0,0);
-    }
-    below.ctx.globalAlpha = partial ? layer.opacity*amt : layer.opacity;
+    below.ctx.globalAlpha = layer.opacity;
     below.ctx.globalCompositeOperation = hasBlend ? layer.blendMode : 'source-over';
     below.ctx.drawImage(layer.canvas,0,0);
     below.ctx.restore();
@@ -3754,15 +4648,8 @@
     layers.forEach(l=>{
       if(!l.visible || l.opacity<=0) return;
       const hasBlend = l.blendMode && l.blendMode!=='normal';
-      const amt = Math.max(0, Math.min(100, l.blendAmount==null?100:l.blendAmount))/100;
-      const partial = hasBlend && amt<0.999;
       photoCtx.save();
-      if(partial){
-        photoCtx.globalAlpha = l.opacity;
-        photoCtx.globalCompositeOperation = 'source-over';
-        photoCtx.drawImage(l.canvas,0,0);
-      }
-      photoCtx.globalAlpha = partial ? l.opacity*amt : l.opacity;
+      photoCtx.globalAlpha = l.opacity;
       photoCtx.globalCompositeOperation = hasBlend ? l.blendMode : 'source-over';
       photoCtx.drawImage(l.canvas,0,0);
       photoCtx.restore();
@@ -3812,25 +4699,9 @@
       blendSelect.addEventListener('change', ()=>{
         layer.blendMode = blendSelect.value;
         applyLayerStyle(layer);
-        blendAmountRow.style.display = layer.blendMode!=='normal' ? 'flex' : 'none';
       });
       blendSelect.addEventListener('click', ev=>ev.stopPropagation());
       info.appendChild(blendSelect);
-
-      // CSSのブレンドモード自体には「強さ」という概念が無いため、0のときは
-      // 効果なし、100で普通にブレンドモードをかけた状態と同じになるよう、
-      // ゴーストレイヤーで疑似的に強さを再現している（syncBlendGhost参照）。
-      const blendAmountRow = document.createElement('div'); blendAmountRow.className='lop';
-      blendAmountRow.style.display = (layer.blendMode && layer.blendMode!=='normal') ? 'flex' : 'none';
-      const blendAmountLabel = document.createElement('span');
-      blendAmountLabel.textContent='効果の量'; blendAmountLabel.style.cssText='font-size:9.5px;color:var(--text-dim);flex:none;width:44px;';
-      const blendAmountInput = document.createElement('input');
-      blendAmountInput.type='range'; blendAmountInput.min=0; blendAmountInput.max=100;
-      blendAmountInput.value = layer.blendAmount==null ? 100 : layer.blendAmount;
-      blendAmountInput.addEventListener('input', ()=>{ layer.blendAmount = +blendAmountInput.value; syncBlendGhost(layer); });
-      blendAmountInput.addEventListener('click', ev=>ev.stopPropagation());
-      blendAmountRow.appendChild(blendAmountLabel); blendAmountRow.appendChild(blendAmountInput);
-      info.appendChild(blendAmountRow);
 
       if(layer.type==='image'){
         // シームレス itself now lives as one あり/なし toggle up in the
@@ -3966,6 +4837,10 @@
     if(el) el.textContent = label;
     const el2 = document.getElementById('smudgeTargetLabel');
     if(el2) el2.textContent = label;
+    const el3 = document.getElementById('smoothTargetLabel');
+    if(el3) el3.textContent = label;
+    const el4 = document.getElementById('eyeBulgeTargetLabel');
+    if(el4) el4.textContent = label;
   }
   document.getElementById('addLayerBtn').addEventListener('click', ()=>{
     if(!state.imgW){ showToast('先に写真を読み込んでね'); return; }
@@ -4180,18 +5055,9 @@
     layers.forEach(l=>{
       if(!l.visible) return;
       const hasBlend = l.blendMode && l.blendMode!=='normal';
-      const amt = Math.max(0, Math.min(100, l.blendAmount==null?100:l.blendAmount))/100;
-      const partial = hasBlend && amt<0.999;
-      // Same two-pass idea as the on-screen ghost canvas: a plain full-
-      // opacity normal-mode pass, then the blend-mode pass on top at only
-      // `amt` of the layer's opacity — so a partial 効果の量 exports exactly
-      // like it previews, not always at full blend strength.
-      if(partial){
-        octx.globalAlpha = l.opacity;
-        octx.globalCompositeOperation = 'source-over';
-        octx.drawImage(l.canvas,0,0);
-      }
-      octx.globalAlpha = partial ? l.opacity*amt : l.opacity;
+      // Single pass — globalAlpha fades the blend mode from invisible to
+      // full strength on its own, matching the on-screen ghost rendering.
+      octx.globalAlpha = l.opacity;
       octx.globalCompositeOperation = hasBlend ? l.blendMode : 'source-over';
       octx.drawImage(l.canvas,0,0);
     });
@@ -4251,6 +5117,42 @@
       updateExportSizeLabel();
     });
   });
+
+  // ---------------- Export format (PNG / JPEG / WebP) ----------------
+  // PNG is lossless but large; JPEG/WebP trade a little quality for a much
+  // smaller file, which matters most once 高解像度 (2x/3x) makes the PNG
+  // huge. JPEG can't hold transparency (a real difference for collages with
+  // gaps between photos), so it's flattened onto white before saving.
+  let exportFormat = 'png';
+  let exportQuality = 90;
+  const FORMAT_NOTES = {
+    png:  'PNGは画質が完全に保たれますが、ファイルサイズは大きめです。透明な部分があるコラージュも透明のまま保存できます。',
+    jpeg: 'JPEGはファイルサイズが小さく、SNS投稿などに向いています。透明な部分は白で塗りつぶされます。画質スライダーで容量とのバランスを調整できます。',
+    webp: 'WebPはJPEGよりさらに小さいファイルサイズで、透明部分もPNGのように保持できます。対応していないアプリもあるので、心配な場合はPNGがおすすめです。',
+  };
+  function updateExportFormatUI(){
+    const note = document.getElementById('exportFormatNote');
+    const qRow = document.getElementById('exportQualityRow');
+    if(note) note.textContent = FORMAT_NOTES[exportFormat] || '';
+    if(qRow) qRow.style.display = exportFormat==='png' ? 'none' : 'flex';
+  }
+  document.querySelectorAll('#exportFormatRow .presetChip').forEach(chip=>{
+    chip.addEventListener('click', ()=>{
+      document.querySelectorAll('#exportFormatRow .presetChip').forEach(c=>c.classList.remove('sel'));
+      chip.classList.add('sel');
+      exportFormat = chip.dataset.format;
+      updateExportFormatUI();
+    });
+  });
+  const exportQualitySlider = document.getElementById('exportQualitySlider');
+  if(exportQualitySlider){
+    exportQualitySlider.addEventListener('input', ()=>{
+      exportQuality = +exportQualitySlider.value;
+      document.getElementById('exportQualityVal').textContent = exportQuality;
+    });
+  }
+  updateExportFormatUI();
+
   document.getElementById('exportBtn').addEventListener('click', ()=>{
     if(!state.imgW){ showToast('先に写真を読み込んでね'); return; }
     updateExportSizeLabel();
@@ -4261,33 +5163,84 @@
     const btn = ev.currentTarget;
     btn.disabled = true; btn.textContent = '処理中…';
     showToast(exportScale>1 ? '高解像度で書き出し中…少し待ってね' : '保存中…');
+    // Restores the button no matter what happens below — previously any
+    // error during compose/upscale/toBlob left the button stuck on
+    // "処理中…" forever with zero feedback, which looked exactly like a
+    // silently broken "保存" button.
+    const finishBtn = ()=>{ btn.disabled = false; btn.textContent = 'この設定で保存する'; };
     // Let the toast/button state actually paint before the heavy synchronous work.
     setTimeout(()=>{
-      let out = composeFinalCanvas();
-      if(exportScale>1){
-        let targetW = Math.round(state.imgW*exportScale), targetH = Math.round(state.imgH*exportScale);
-        if(Math.max(targetW,targetH) > MAX_EXPORT_DIM){
-          const r = MAX_EXPORT_DIM/Math.max(targetW,targetH);
-          targetW = Math.round(targetW*r); targetH = Math.round(targetH*r);
+      try {
+        let out = composeFinalCanvas();
+        if(exportScale>1){
+          let targetW = Math.round(state.imgW*exportScale), targetH = Math.round(state.imgH*exportScale);
+          if(Math.max(targetW,targetH) > MAX_EXPORT_DIM){
+            const r = MAX_EXPORT_DIM/Math.max(targetW,targetH);
+            targetW = Math.round(targetW*r); targetH = Math.round(targetH*r);
+          }
+          const up = document.createElement('canvas');
+          up.width = targetW; up.height = targetH;
+          const uctx = up.getContext('2d');
+          uctx.imageSmoothingEnabled = true;
+          uctx.imageSmoothingQuality = 'high';
+          uctx.drawImage(out, 0, 0, targetW, targetH);
+          sharpenCanvas(up, 0.35, 1.1);
+          out = up;
         }
-        const up = document.createElement('canvas');
-        up.width = targetW; up.height = targetH;
-        const uctx = up.getContext('2d');
-        uctx.imageSmoothingEnabled = true;
-        uctx.imageSmoothingQuality = 'high';
-        uctx.drawImage(out, 0, 0, targetW, targetH);
-        sharpenCanvas(up, 0.35, 1.1);
-        out = up;
+        // JPEG has no alpha channel — any transparent area (gaps in a
+        // collage layout, an image layer that doesn't fully cover the
+        // canvas, etc.) would otherwise come out black. Flatten onto a
+        // plain white background first, matching what most JPEG viewers/
+        // apps would do anyway, just done predictably here.
+        if(exportFormat==='jpeg'){
+          const flat = document.createElement('canvas');
+          flat.width = out.width; flat.height = out.height;
+          const fctx = flat.getContext('2d');
+          fctx.fillStyle = '#fff';
+          fctx.fillRect(0,0,flat.width,flat.height);
+          fctx.drawImage(out,0,0);
+          out = flat;
+        }
+        const mime = exportFormat==='jpeg' ? 'image/jpeg' : exportFormat==='webp' ? 'image/webp' : 'image/png';
+        const ext = exportFormat==='jpeg' ? 'jpg' : exportFormat==='webp' ? 'webp' : 'png';
+        const quality = exportFormat==='png' ? undefined : Math.max(0.1, Math.min(1, exportQuality/100));
+        out.toBlob(blob=>{
+          try {
+            if(!blob) throw new Error('画像の書き出しに失敗しました（blobがnull）。この形式はお使いのブラウザに対応していない可能性があります');
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'kahitsu_' + Date.now() + '.' + ext;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            // Revoke slightly later rather than immediately — revoking the
+            // URL synchronously right after click() has, on some desktop
+            // browsers, raced the download start and produced a broken/
+            // empty file. A short delay costs nothing and removes that race.
+            setTimeout(()=>URL.revokeObjectURL(url), 4000);
+            showToast('保存しました ✨');
+          } catch(err){
+            console.error('Export save failed:', err);
+            showErrorToast('保存に失敗しました: ' + err.message);
+            // Fallback so the work isn't lost even if the automatic download
+            // itself was blocked by the browser: open the result in a new
+            // tab so it can still be saved manually (right click → 名前を
+            // 付けて画像を保存).
+            try {
+              const url2 = URL.createObjectURL(blob);
+              window.open(url2, '_blank');
+            } catch(err2){ /* nothing more we can do */ }
+          } finally {
+            finishBtn();
+            closeSheets();
+          }
+        }, mime, quality);
+      } catch(err){
+        console.error('Export failed:', err);
+        showErrorToast('保存に失敗しました: ' + err.message);
+        finishBtn();
       }
-      out.toBlob(blob=>{
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'kahitsu_' + Date.now() + '.png';
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
-        showToast('保存しました ✨');
-        btn.disabled = false; btn.textContent = 'この設定で保存する';
-        closeSheets();
-      }, 'image/png');
     }, 30);
   });
 
