@@ -171,6 +171,8 @@
   .row{ display:flex; align-items:center; gap:10px; margin-bottom:14px; }
   .row label{ font-size:12px; color:var(--text-dim); width:82px; flex:none; }
   .row .val{ width:38px; flex:none; text-align:right; font-size:11.5px; color:var(--gold); font-weight:700;}
+  .valNum{ width:46px; flex:none; text-align:right; font-size:11.5px; color:var(--gold); font-weight:700; background:var(--bg-sheet); border:1px solid var(--line); border-radius:8px; padding:3px 4px; font-family:'M PLUS Rounded 1c'; }
+  .valNum::-webkit-inner-spin-button, .valNum::-webkit-outer-spin-button{ opacity:0.6; }
   input[type=range]{
     -webkit-appearance:none; appearance:none; flex:1; height:6px; border-radius:4px;
     background:var(--line); outline:none;
@@ -403,6 +405,7 @@
       <button class="tool" data-tool="eraser"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 21-4.3-4.3a1 1 0 0 1 0-1.4l9.6-9.6a1 1 0 0 1 1.4 0l5.6 5.6a1 1 0 0 1 0 1.4L13 18"/><path d="M22 21H7"/></svg><span>消しゴム</span></button>
       <button class="tool" data-tool="lash"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 15c4-4 14-4 18 0"/><path d="M7.2 13c-.9-1.7-1.1-2.8-.9-3.9"/><path d="M12 12.4c0-1.9.2-3 .6-3.9"/><path d="M16.8 13c.9-1.7 1.1-2.8.9-3.9"/></svg><span>まつ毛</span></button>
       <button class="tool" data-tool="eyebulge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3.2"/></svg><span>目サイズ</span></button>
+      <button class="tool" data-tool="clone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="12" height="12" rx="2"/><path d="M9 15v3a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-3"/></svg><span>スタンプ</span></button>
       <button class="tool" id="brushToolBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20c1-4 2-8 6-8s5 4 6 8"/><circle cx="17" cy="6" r="3"/></svg><span>ブラシ設定</span></button>
     </div>
     <div class="toolRow">
@@ -442,7 +445,8 @@
     <div class="row"><label>ラメの量</label><input type="range" id="glitterDensitySlider" min="10" max="100" value="55"><span class="val" id="glitterDensityVal">55</span></div>
   </div>
 
-  <div class="row"><label>太さ</label><input type="range" id="sizeSlider" min="0" max="1000" step="1" value="500"><span class="val" id="sizeVal">10</span></div>
+  <div class="row"><label>太さ</label><input type="range" id="sizeSlider" min="0" max="1000" step="1" value="500"><input type="number" class="valNum" id="sizeVal" value="10"></div>
+  <div class="presetRow" id="recentSizeRow" style="flex-wrap:wrap;overflow:visible;margin-top:-6px;"></div>
   <div class="row"><label>不透明度</label><input type="range" id="opSlider" min="1" max="100" value="100"><span class="val" id="opVal">100</span></div>
   <div class="row"><label>ふちのやわらかさ</label><input type="range" id="softSlider" min="0" max="100" value="0"><span class="val" id="softVal">0</span></div>
   <p style="font-size:11px;color:var(--text-dim);line-height:1.6;margin:-8px 0 14px;">ふちのやわらかさを上げると、Gペンでもふんわりにじんだ線になります。0でくっきり、100でエアブラシ並みにぼやけます。</p>
@@ -518,12 +522,28 @@
     <div class="presetChip sel" data-eyemode="bigger">大きく</div>
     <div class="presetChip" data-eyemode="smaller">小さく</div>
   </div>
-  <div class="row"><label>範囲</label><input type="range" id="eyeBulgeRadiusSlider" min="20" max="200" value="70"><span class="val" id="eyeBulgeRadiusVal">70</span></div>
+  <div class="row"><label>範囲</label><input type="range" id="eyeBulgeRadiusSlider" min="0" max="1000" step="1" value="500"><span class="val" id="eyeBulgeRadiusVal">70</span></div>
   <div class="previewWrap">
     <div id="eyeBulgeRadiusPreview" style="border-radius:50%;background:rgba(127,224,255,.35);border:2px solid var(--crystal);"></div>
   </div>
   <div class="row"><label>強さ</label><input type="range" id="eyeBulgeStrengthSlider" min="1" max="100" value="40"><span class="val" id="eyeBulgeStrengthVal">40</span></div>
   <p style="font-size:11.5px;color:var(--crystal);line-height:1.6;margin:0;">🎯 今の対象：<span id="eyeBulgeTargetLabel">-</span>（レイヤー一覧で切り替えられます）</p>
+</div>
+
+<!-- スタンプ (clone stamp) settings sheet -->
+<div class="sheet" id="cloneSheet">
+  <div class="sheetHandle"></div>
+  <div class="sheetTitle">🪄 スタンプ設定</div>
+  <p style="font-size:11.5px;color:var(--text-dim);line-height:1.7;margin:0 0 8px;">近くの綺麗な場所をコピーして、透かし文字や小物などを自然に消せるツールだよ。①下のボタンでお手本にする場所（コピー元）を選ぶ → ②消したい場所をなぞる、の2ステップ。なぞっている間、コピー元との位置関係を保ったまま追従してコピーされるよ。<b style="color:var(--gold);">今選んでいるレイヤーだけ</b>に効きます。</p>
+  <button id="cloneSetSourceBtn" style="width:100%;padding:10px;border-radius:14px;border:1.5px solid var(--gold);background:rgba(243,205,142,.08);color:var(--gold);font-weight:700;font-size:12.5px;font-family:'M PLUS Rounded 1c';margin-bottom:6px;">① コピー元を指定</button>
+  <p style="font-size:11.5px;color:var(--crystal);line-height:1.6;margin:0 0 14px;">コピー元：<span id="cloneSourceLabel">未設定</span></p>
+  <div class="row"><label>太さ</label><input type="range" id="cloneSizeSlider" min="0" max="1000" step="1" value="500"><input type="number" class="valNum" id="cloneSizeVal" value="50"></div>
+  <div class="previewWrap">
+    <div id="cloneSizePreview" style="border-radius:50%;background:rgba(127,224,255,.35);border:2px solid var(--crystal);"></div>
+  </div>
+  <div class="row"><label>強さ</label><input type="range" id="cloneStrengthSlider" min="1" max="100" value="100"><span class="val" id="cloneStrengthVal">100</span></div>
+  <div class="row"><label>ふちのやわらかさ</label><input type="range" id="cloneSoftnessSlider" min="0" max="100" value="45"><span class="val" id="cloneSoftnessVal">45</span></div>
+  <p style="font-size:11.5px;color:var(--crystal);line-height:1.6;margin:0;">🎯 今の対象：<span id="cloneTargetLabel">-</span>（レイヤー一覧で切り替えられます）</p>
 </div>
 
 <!-- Eyelash assist (なぞって生成) settings sheet -->
@@ -541,15 +561,23 @@
     <div class="lashSideBtn" data-lashside="lower"><span class="bicon">⬇️</span>下まつげ</div>
   </div>
 
-  <div class="row"><label>密度</label><input type="range" id="lashDensitySlider" min="10" max="160" value="60"><span class="val" id="lashDensityVal">60</span></div>
-  <div class="row"><label>束感</label><input type="range" id="lashClumpSlider" min="0" max="160" value="0"><span class="val" id="lashClumpVal">0</span></div>
+  <div class="row"><label>密度</label><input type="range" id="lashDensitySlider" min="10" max="160" value="60"><input type="number" class="valNum" id="lashDensityVal" value="60"></div>
+  <div class="row"><label>束感</label><input type="range" id="lashClumpSlider" min="0" max="160" value="0"><input type="number" class="valNum" id="lashClumpVal" value="0"></div>
   <div class="brushTypeGrid">
     <div class="lashSideBtn sel" data-lashclumpstyle="spread"><span class="bicon">🍃</span>根元ばらけ</div>
     <div class="lashSideBtn" data-lashclumpstyle="joined"><span class="bicon">🪭</span>根元そろえ</div>
   </div>
   <p style="font-size:11px;color:var(--text-dim);line-height:1.6;margin:-8px 0 14px;">束感を上げると、まつ毛が1本ずつ均等に並ぶ代わりに数本ずつのまとまり（房）になって、房と房の間にすき間ができるよ（0でいつも通りの均等な並び）。「根元ばらけ」は房の中の根元も少しバラけたナチュラルなまとまり方、「根元そろえ」は房の根元をぴったり1点に揃えて、そこから2本＋短めの1本が扇状に開く、手描き風のV字まつ毛になるよ。</p>
-  <div class="row"><label>長さ</label><input type="range" id="lashLengthSlider" min="10" max="160" value="32"><span class="val" id="lashLengthVal">32</span></div>
-  <div class="row"><label>カール</label><input type="range" id="lashCurlSlider" min="0" max="100" value="45"><span class="val" id="lashCurlVal">45</span></div>
+  <div class="row"><label>長さ</label><input type="range" id="lashLengthSlider" min="0" max="1000" step="1" value="500"><input type="number" class="valNum" id="lashLengthVal" value="32"></div>
+  <div class="brushTypeGrid">
+    <div class="lashSideBtn sel" data-lashshape="natural"><span class="bicon">➰</span>自然（中央長め）</div>
+    <div class="lashSideBtn" data-lashshape="outer"><span class="bicon">😌</span>目じり長め（たれ目）</div>
+    <div class="lashSideBtn" data-lashshape="inner"><span class="bicon">😳</span>目頭長め</div>
+    <div class="lashSideBtn" data-lashshape="doll"><span class="bicon">👁️</span>丸目（中央だけ長め）</div>
+    <div class="lashSideBtn" data-lashshape="even"><span class="bicon">➖</span>均一</div>
+  </div>
+  <p style="font-size:11px;color:var(--text-dim);line-height:1.6;margin:-8px 0 14px;">まつ毛の長さがまぶたのどこで一番長くなるかを選べるよ。「目じり長め」は目頭→目尻の順になぞると外側（目尻側）がきゅっと長くなる、たれ目っぽい形。「目頭長め」はその逆。なぞる向きを逆にすると、長くなる場所も逆になるので注意してね。</p>
+  <div class="row"><label>カール</label><input type="range" id="lashCurlSlider" min="0" max="100" value="45"><input type="number" class="valNum" id="lashCurlVal" value="45"></div>
 
   <div class="brushTypeGrid">
     <div class="lashSideBtn sel" data-lashcurl="c"><span class="bicon">〰️</span>Cカール</div>
@@ -558,13 +586,23 @@
   </div>
   <p style="font-size:11px;color:var(--text-dim);line-height:1.6;margin:-8px 0 14px;">Cカールは根元から毛先まで均一に丸くしなる、ナチュラルなカーブ。Jカールは根元はまっすぐ気味で、後半からなだらかに大きく持ち上がる、ぱっちり系（急な折れ目は作らないよ）。毛先ばらけは1本ごとに毛先の向きをランダムにブレさせて、束感・ワイルド感を出せるよ。どのタイプでも、まつ毛の流れは目の中心付近では立ち上がり気味、外側にいくほど扇状に開いていくようになっているよ。</p>
 
-  <div class="row"><label>太さ</label><input type="range" id="lashThicknessSlider" min="0.4" max="8" step="0.2" value="2.6"><span class="val" id="lashThicknessVal">2.6</span></div>
-  <div class="row"><label>ばらつき</label><input type="range" id="lashRandomSlider" min="0" max="100" value="35"><span class="val" id="lashRandomVal">35</span></div>
-  <div class="row"><label>不透明度</label><input type="range" id="lashOpacitySlider" min="1" max="100" value="100"><span class="val" id="lashOpacityVal">100</span></div>
-  <div class="row"><label>ふちのやわらかさ</label><input type="range" id="lashSoftnessSlider" min="0" max="100" value="0"><span class="val" id="lashSoftnessVal">0</span></div>
+  <div class="row"><label>太さ</label><input type="range" id="lashThicknessSlider" min="0.4" max="8" step="0.2" value="2.6"><input type="number" class="valNum" id="lashThicknessVal" value="2.6" step="0.1"></div>
+  <div class="row"><label>ばらつき</label><input type="range" id="lashRandomSlider" min="0" max="100" value="35"><input type="number" class="valNum" id="lashRandomVal" value="35"></div>
+  <div class="row"><label>不透明度</label><input type="range" id="lashOpacitySlider" min="1" max="100" value="100"><input type="number" class="valNum" id="lashOpacityVal" value="100"></div>
+  <div class="row"><label>ふちのやわらかさ</label><input type="range" id="lashSoftnessSlider" min="0" max="100" value="0"><input type="number" class="valNum" id="lashSoftnessVal" value="0"></div>
   <p style="font-size:11px;color:var(--text-dim);line-height:1.6;margin:-8px 0 14px;">ふちのやわらかさを上げると、まつ毛の際がふんわりにじんだ質感になるよ。0でくっきり、100でぼやけた感じに。</p>
 
-  <p style="font-size:11px;color:var(--text-dim);line-height:1.6;margin:0;">色は「色」ツールで選んだ今のペンカラーを使うよ。まつ毛には黒〜こげ茶あたりがおすすめ。</p>
+  <p style="font-size:11px;color:var(--text-dim);line-height:1.6;margin:0 0 14px;">色は「色」ツールで選んだ今のペンカラーを使うよ。まつ毛には黒〜こげ茶あたりがおすすめ。</p>
+
+  <div style="border-top:1px solid var(--line); padding-top:12px;">
+    <div style="font-size:12.5px;font-weight:700;color:var(--gold);margin-bottom:8px;">💾 まつ毛プリセット</div>
+    <div class="row" style="margin-bottom:8px;">
+      <input type="text" id="lashPresetNameInput" placeholder="プリセット名（例：ぱっちりナチュラル）" style="flex:1;background:var(--bg-sheet);border:1px solid var(--line);border-radius:10px;padding:8px 10px;color:var(--text);font-size:12px;font-family:'M PLUS Rounded 1c';">
+      <button id="lashPresetSaveBtn" style="flex:none;padding:8px 14px;border-radius:10px;border:1.5px solid var(--gold);background:rgba(243,205,142,.08);color:var(--gold);font-weight:700;font-size:12px;font-family:'M PLUS Rounded 1c';">保存</button>
+    </div>
+    <div class="presetRow" id="lashPresetRow" style="flex-wrap:wrap;overflow:visible;"></div>
+    <p style="font-size:10.5px;color:var(--text-dim);line-height:1.6;margin:0;">今の密度・束感・長さ・カール・太さ・ばらつき・不透明度・ふちのやわらかさをまとめて名前をつけて保存できます。チップをタップで呼び出し、チップの✕で削除できます。ブラウザに保存されるので、この端末・このブラウザでは次回以降も使えます。</p>
+  </div>
 </div>
 
 <!-- Color sheet -->
@@ -630,6 +668,9 @@
 <div class="sheet" id="adjustSheet">
   <div class="sheetHandle"></div>
   <div class="sheetTitle">🎚️ 画像調整<button id="adjustCloseBtn" style="margin-left:auto;background:none;border:none;color:var(--text-dim);font-size:18px;line-height:1;padding:4px 6px;">✕</button></div>
+
+  <button id="autoEnhanceBtn" style="width:100%;padding:12px;border-radius:16px;border:none;background:linear-gradient(120deg, var(--crystal), var(--pink));color:#101431;font-weight:700;font-size:13px;font-family:'M PLUS Rounded 1c';margin-bottom:6px;">✨ ワンタップおまかせ補正</button>
+  <p style="font-size:11px;color:var(--text-dim);line-height:1.6;margin:0 0 14px;">写真を解析して、暗さ・くすみ・眠いピント感をまとめて自動調整します。スクリーンショットなど、全体的に暗く・平坦で・ぼんやりした画像が、明るくクリアで発色の良い印象に近づきます。1回の操作でまとめて適用（「元に戻す」で取り消せます）。物足りない／やりすぎな場合は、下の各スライダーで個別に微調整してね。</p>
 
   <div class="row"><label>明るさ</label><input type="range" id="brSlider" min="-100" max="100" value="0"><span class="val" id="brVal">0</span></div>
   <div class="row"><label>コントラスト</label><input type="range" id="ctSlider" min="-100" max="100" value="0"><span class="val" id="ctVal">0</span></div>
@@ -833,7 +874,7 @@
   <div id="layerList"></div>
   <button id="addLayerBtn">＋ 新規レイヤーを追加</button>
   <button id="flattenAllBtn">🧩 すべてのレイヤーを元画像に統合</button>
-  <p style="font-size:10.5px;color:var(--text-dim);line-height:1.6;margin:6px 0 0;">レイヤーの各「⬇」ボタンで1つ下のレイヤー（一番下は元画像）に結合できます。統合すると元には戻せないので注意してね。各レイヤーの不透明度スライダーの下にある「通常」のプルダウンから、乗算・スクリーン・オーバーレイ・ソフトライト・焼き込みなどのブレンドモードを選べます。ブレンドモードを選んでいる間は、同じ不透明度スライダーが「効果の強さ」も兼ねます（0%＝効果なし、100%＝そのブレンドモードを普通にかけた状態）。</p>
+  <p style="font-size:10.5px;color:var(--text-dim);line-height:1.6;margin:6px 0 0;">「▲」「▼」ボタンで1つ上・1つ下のレイヤーと重なる順番を入れ替えられます。「⬇」ボタンで1つ下のレイヤー（一番下は元画像）に結合できます。統合すると元には戻せないので注意してね。各レイヤーの不透明度スライダーの下にある「通常」のプルダウンから、乗算・スクリーン・オーバーレイ・ソフトライト・焼き込みなどのブレンドモードを選べます。ブレンドモードを選んでいる間は、同じ不透明度スライダーが「効果の強さ」も兼ねます（0%＝効果なし、100%＝そのブレンドモードを普通にかけた状態）。</p>
 </div>
 
 <!-- Export / resolution sheet -->
@@ -885,6 +926,7 @@
       <tr><th>ぼかし</th><td>なぞった場所をふんわりぼかす</td></tr>
       <tr><th>なぞる</th><td>指で色を引きずって伸ばす（指先ツール）</td></tr>
       <tr><th>なじませ</th><td>髪の毛の輪郭など、ギザギザした境目だけをなめらかにする（ぼかしと違い平らな場所はあまり変わらない）</td></tr>
+      <tr><th>スタンプ</th><td>近くの綺麗な場所をコピーして、透かし文字や小物などを自然に消す（①コピー元を指定→②消したい場所をなぞる）</td></tr>
       <tr><th>消しゴム</th><td>描いたものを消す。専用の太さ・不透明度あり</td></tr>
       <tr><th>まつ毛</th><td>まぶたをなぞるだけで自然なまつ毛を自動生成</td></tr>
       <tr><th>ブラシ設定</th><td>今選んでいるツールの詳細設定を開く（自動で切り替わる）</td></tr>
@@ -1049,12 +1091,16 @@
     eyeBulgeMode:'bigger',
     eyeBulgeRadius:70,
     eyeBulgeStrength:40,
+    cloneSize:50,
+    cloneStrength:100,
+    cloneSoftness:45,
     lashDensity:60,
     lashClump:0,
     lashClumpStyle:'spread',
     lashLength:32,
     lashCurl:45,
     lashCurlStyle:'c',
+    lashShape:'natural',
     lashSoftness:0,
     lashThickness:2.6,
     lashRandom:35,
@@ -2170,6 +2216,84 @@
     applyAdjustments();
   });
 
+  // ---------------- ✨ ワンタップおまかせ補正 (auto enhance) ----------------
+  // Analyzes the actual photo instead of just nudging fixed amounts, so a
+  // photo that's already bright/contrasty gets left mostly alone while a
+  // flat, dim one (a screenshot, a photo taken indoors, etc.) gets pulled
+  // up properly — the same idea as "auto levels"/"auto tone" in Lightroom
+  // or Google Photos' 自動補正: stretch each channel's actual dark→light
+  // range out to the full 0–255 range (auto levels), then a mild vibrance
+  // lift and a mild sharpen/clarity pass on top, since a photo that was
+  // dark and flat usually also reads as a bit soft/muddy once brightened.
+  // Single click, single undo step — meant as a fast starting point, not a
+  // replacement for the sliders below (which still work normally after).
+  function autoEnhance(){
+    if(!photoCtx || !state.imgW) return;
+    const before = photoCtx.getImageData(0,0,photoCanvas.width,photoCanvas.height);
+    const w = before.width, h = before.height;
+    const data = new Uint8ClampedArray(before.data);
+
+    // Build a luminance-balance histogram per channel from a sampled subset
+    // of pixels (every photo's plenty dense for this — sampling keeps a
+    // large photo from doing a full-resolution pass twice).
+    const totalPx = w*h;
+    const stride = Math.max(1, Math.floor(totalPx/60000));
+    const histR = new Uint32Array(256), histG = new Uint32Array(256), histB = new Uint32Array(256);
+    let sampleCount = 0;
+    for(let p=0; p<totalPx; p+=stride){
+      const i = p*4;
+      histR[data[i]]++; histG[data[i+1]]++; histB[data[i+2]]++;
+      sampleCount++;
+    }
+    function percentile(hist, p){
+      const target = sampleCount*p;
+      let acc = 0;
+      for(let v=0; v<256; v++){ acc += hist[v]; if(acc>=target) return v; }
+      return 255;
+    }
+    // Clip 0.5% off each end so a few stray pure-black/white pixels (noise,
+    // a tiny bright highlight) don't drag the whole stretch off target.
+    const CLIP = 0.005;
+    const rLo=percentile(histR,CLIP), rHi=percentile(histR,1-CLIP);
+    const gLo=percentile(histG,CLIP), gHi=percentile(histG,1-CLIP);
+    const bLo=percentile(histB,CLIP), bHi=percentile(histB,1-CLIP);
+    function remap(v, lo, hi){
+      if(hi<=lo) return v;
+      return Math.max(0, Math.min(255, (v-lo)/(hi-lo)*255));
+    }
+    // If the photo is already using close to the full range on every
+    // channel, there's essentially nothing to stretch — skip levels and
+    // just do the mild vibrance+clarity pass below, so a photo that's
+    // already well-exposed doesn't get pushed around for no reason.
+    const alreadyFullRange = (rHi-rLo)>235 && (gHi-gLo)>235 && (bHi-bLo)>235;
+
+    for(let i=0; i<data.length; i+=4){
+      let r = alreadyFullRange ? data[i]   : remap(data[i],   rLo, rHi);
+      let g = alreadyFullRange ? data[i+1] : remap(data[i+1], gLo, gHi);
+      let b = alreadyFullRange ? data[i+2] : remap(data[i+2], bLo, bHi);
+      // Mild vibrance: boosts muted colors more than already-vivid ones,
+      // so skin tones don't get oversaturated the way a flat saturation
+      // boost would.
+      const avg = (r+g+b)/3, maxc = Math.max(r,g,b);
+      const sat = (maxc-avg)/128;
+      const factor = 1 + 0.22*(1-sat);
+      data[i]   = avg + (r-avg)*factor;
+      data[i+1] = avg + (g-avg)*factor;
+      data[i+2] = avg + (b-avg)*factor;
+    }
+    photoCtx.putImageData(new ImageData(data, w, h), 0, 0);
+    // A dim/flat photo usually reads as a little soft once brightened —
+    // reuses the same unsharp-mask helper the シャープ slider uses, at a
+    // gentle fixed strength.
+    sharpenCanvas(photoCanvas, 0.3, 1.1);
+
+    pushHistory({id:PHOTO_ID}, before);
+    renderAdjustCanvas();
+    if(sheets.layers.classList.contains('show')) renderLayerList();
+    showToast('自動補正しました ✨');
+  }
+  document.getElementById('autoEnhanceBtn').addEventListener('click', autoEnhance);
+
   // ---------------- De-yellow / 色かぶり除去 (color cast removal) ----------------
   // Looks at each pixel's own channel balance and only pulls back pixels that
   // actually read as that cast — so e.g. removing a yellow cast fades
@@ -2469,7 +2593,7 @@
       state.eyeBulgeMode = chip.dataset.eyemode;
     });
   });
-  bindRange('eyeBulgeRadiusSlider','eyeBulgeRadiusVal','eyeBulgeRadius','');
+  bindPowerRange('eyeBulgeRadiusSlider','eyeBulgeRadiusVal','eyeBulgeRadius', 5, 200, 2.2, 0);
   bindRange('eyeBulgeStrengthSlider','eyeBulgeStrengthVal','eyeBulgeStrength','');
   function updateEyeBulgePreview(){
     const el = document.getElementById('eyeBulgeRadiusPreview');
@@ -2480,6 +2604,30 @@
   }
   document.getElementById('eyeBulgeRadiusSlider').addEventListener('input', updateEyeBulgePreview);
   updateEyeBulgePreview();
+
+  // ---------------- スタンプ (clone stamp) settings ----------------
+  bindPowerRange('cloneSizeSlider','cloneSizeVal','cloneSize', 4, 260, 2.4, 0);
+  bindRange('cloneStrengthSlider','cloneStrengthVal','cloneStrength','');
+  bindRange('cloneSoftnessSlider','cloneSoftnessVal','cloneSoftness','');
+  function updateClonePreview(){
+    const el = document.getElementById('cloneSizePreview');
+    if(!el) return;
+    const shown = Math.min(96, Math.max(6, state.cloneSize*0.4));
+    el.style.width = shown+'px';
+    el.style.height = shown+'px';
+  }
+  document.getElementById('cloneSizeSlider').addEventListener('input', updateClonePreview);
+  updateClonePreview();
+  document.getElementById('cloneSetSourceBtn').addEventListener('click', ()=>{
+    if(!state.imgW){ showToast('先に写真を読み込んでね'); return; }
+    cloneAwaitingSource = true;
+    state.tool = 'clone';
+    document.querySelectorAll('.tool[data-tool]').forEach(b=>b.classList.remove('active'));
+    const btn = document.querySelector('.tool[data-tool="clone"]');
+    if(btn) btn.classList.add('active');
+    closeSheets();
+    showToast('お手本にしたい場所を1回タップしてね');
+  });
 
   // BUGFIX: this used to select ALL `.presetChip` elements on the whole
   // page — which, once other chip rows (upscale scale, export format,
@@ -2753,6 +2901,43 @@
     bulgeStamp(layer.ctx, cx, cy, state.eyeBulgeRadius, state.eyeBulgeStrength/100, state.eyeBulgeMode);
   }
 
+  // ---------------- スタンプ (clone stamp) ----------------
+  // The professional answer to "remove this watermark/small object": rather
+  // than trying to invent new pixels (a full content-aware fill is a much
+  // heavier, less predictable algorithm), a clone stamp copies real texture
+  // from elsewhere in the same photo — nearby skin, background, hair — over
+  // the unwanted area. It's the same tool Photoshop/Lightroom retouchers
+  // reach for first for exactly this kind of cleanup.
+  // Samples a size×size region from `snapshot` at (px+offset.dx, py+offset.dy)
+  // and stamps it at (px,py) on the live layer, feathered by a radial-
+  // gradient alpha mask so the edge of the brush blends in rather than
+  // leaving a hard-edged patch.
+  function cloneStampAt(target, snapshot, px, py, size, offset, strength, softness){
+    const r = size/2;
+    const bw = Math.max(1, Math.ceil(size)), bh = bw;
+    const bx = Math.round(px-r), by = Math.round(py-r);
+    const sx = px+offset.dx-r, sy = py+offset.dy-r;
+    const tmp = document.createElement('canvas');
+    tmp.width = bw; tmp.height = bh;
+    const tctx = tmp.getContext('2d');
+    tctx.drawImage(snapshot, sx, sy, bw, bh, 0, 0, bw, bh);
+    tctx.globalCompositeOperation = 'destination-in';
+    const innerR = Math.max(0, r*(1-Math.max(0,Math.min(100,softness))/100));
+    const grad = tctx.createRadialGradient(bw/2,bh/2, innerR, bw/2,bh/2, r);
+    grad.addColorStop(0, 'rgba(0,0,0,1)');
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    tctx.fillStyle = grad;
+    tctx.fillRect(0,0,bw,bh);
+    target.ctx.save();
+    target.ctx.globalAlpha = Math.max(0,Math.min(100,strength))/100;
+    target.ctx.drawImage(tmp, bx, by);
+    target.ctx.restore();
+  }
+  function updateCloneSourceLabel(){
+    const el = document.getElementById('cloneSourceLabel');
+    if(el) el.textContent = cloneSource ? '設定済み ✓' : '未設定';
+  }
+
   // ---------------- Pointer handling ----------------
   function redrawMovableLayer(layer){
     if(layer.type==='text') redrawTextLayer(layer); else redrawImageLayer(layer);
@@ -2763,6 +2948,14 @@
   let justPinched = false;
   let imgDrag = null, imgDragBefore = null; // active drag/scale of a collage image layer
   let eyeBulgeSession = null, eyeBulgeBeforeData = null; // active 目を大きく/小さく gesture
+  // Clone stamp (スタンプ): cloneSource is the sample point picked by the user;
+  // cloneOffset is the fixed sample→brush offset for the current "aligned"
+  // run (recomputed only when a new source is picked, same convention as
+  // Photoshop's Aligned clone stamp); cloneSnapshot is a frozen copy of the
+  // layer taken at stroke start so sampling never reads pixels this same
+  // stroke has already painted over.
+  let cloneSource = null, cloneOffset = null, cloneOffsetLocked = false, cloneAwaitingSource = false;
+  let cloneSession = null, cloneBeforeData = null, cloneSnapshot = null;
 
   function dist(a,b){ return Math.hypot(a.x-b.x, a.y-b.y); }
   function mid(a,b){ return {x:(a.x+b.x)/2, y:(a.y+b.y)/2}; }
@@ -2814,6 +3007,32 @@
           applyEyeBulgeAt(layer, cp.x, cp.y);
           if(layer.isPhoto) renderAdjustCanvas(); else refreshLayerThumb(layer);
         }
+      } else if(state.tool==='clone'){
+        const cp = screenToCanvas(e.clientX, e.clientY);
+        if(cloneAwaitingSource){
+          cloneSource = cp;
+          cloneOffsetLocked = false;
+          cloneAwaitingSource = false;
+          showToast('コピー元を設定したよ。次はコピーしたい場所をなぞってね');
+          updateCloneSourceLabel();
+        } else if(!cloneSource){
+          showToast('先に「コピー元を指定」でお手本の場所を選んでね');
+        } else {
+          const layer = getActiveLayer();
+          if(layer){
+            if(!cloneOffsetLocked){
+              cloneOffset = { dx: cloneSource.x-cp.x, dy: cloneSource.y-cp.y };
+              cloneOffsetLocked = true;
+            }
+            cloneBeforeData = layer.ctx.getImageData(0,0,layer.canvas.width,layer.canvas.height);
+            cloneSnapshot = document.createElement('canvas');
+            cloneSnapshot.width = layer.canvas.width; cloneSnapshot.height = layer.canvas.height;
+            cloneSnapshot.getContext('2d').drawImage(layer.canvas,0,0);
+            cloneSession = { layer, lastX:cp.x, lastY:cp.y };
+            cloneStampAt(layer, cloneSnapshot, cp.x, cp.y, state.cloneSize, cloneOffset, state.cloneStrength, state.cloneSoftness);
+            if(layer.isPhoto) renderAdjustCanvas(); else refreshLayerThumb(layer);
+          }
+        }
       }
     } else if(activePointers.size === 2){
       if(stroke){ cancelStroke(); }
@@ -2858,6 +3077,18 @@
       const cp = screenToCanvas(e.clientX, e.clientY);
       applyEyeBulgeAt(eyeBulgeSession.layer, cp.x, cp.y);
       if(eyeBulgeSession.layer.isPhoto) renderAdjustCanvas(); else refreshLayerThumb(eyeBulgeSession.layer);
+    } else if(activePointers.size === 1 && state.tool==='clone' && cloneSession){
+      const cp = screenToCanvas(e.clientX, e.clientY);
+      const last = cloneSession;
+      const segDist = Math.hypot(cp.x-last.lastX, cp.y-last.lastY);
+      const stepSize = Math.max(3, state.cloneSize*0.2);
+      const steps = Math.max(1, Math.round(segDist/stepSize));
+      for(let i=1;i<=steps;i++){
+        const t = i/steps;
+        cloneStampAt(cloneSession.layer, cloneSnapshot, last.lastX+(cp.x-last.lastX)*t, last.lastY+(cp.y-last.lastY)*t, state.cloneSize, cloneOffset, state.cloneStrength, state.cloneSoftness);
+      }
+      cloneSession.lastX = cp.x; cloneSession.lastY = cp.y;
+      if(cloneSession.layer.isPhoto) renderAdjustCanvas(); else refreshLayerThumb(cloneSession.layer);
     } else if(activePointers.size === 1 && pinch && pinch.mode==='pan1'){
       const dx = e.clientX - pinch.last.x, dy = e.clientY - pinch.last.y;
       state.tx += dx; state.ty += dy;
@@ -2901,6 +3132,12 @@
         if(sheets.layers.classList.contains('show')) renderLayerList();
         eyeBulgeSession = null; eyeBulgeBeforeData = null;
       }
+      if(cloneSession){
+        pushHistory(cloneSession.layer, cloneBeforeData);
+        if(cloneSession.layer.isPhoto) renderAdjustCanvas(); else refreshLayerThumb(cloneSession.layer);
+        if(sheets.layers.classList.contains('show')) renderLayerList();
+        cloneSession = null; cloneBeforeData = null; cloneSnapshot = null;
+      }
       if(state.tool==='eyedropper' && eyedropSampleCtx){
         eyedropSampleCtx = null; eyedropSampleCanvas = null;
         showToast('スポイトで色を取得しました 🎨');
@@ -2923,11 +3160,11 @@
     // a plain mouse hover with nothing pressed (activePointers.size===0,
     // pointerType 'mouse') — but not mid-pinch/two-finger gestures.
     const showable = activePointers.size===1 || (activePointers.size===0 && e.pointerType==='mouse');
-    if(state.tool==='pen'||state.tool==='eraser'||state.tool==='blur'||state.tool==='smudge'||state.tool==='smooth'||state.tool==='lash'||state.tool==='eyebulge'){
+    if(state.tool==='pen'||state.tool==='eraser'||state.tool==='blur'||state.tool==='smudge'||state.tool==='smooth'||state.tool==='lash'||state.tool==='eyebulge'||state.tool==='clone'){
       cursorDot.classList.remove('eyedrop');
       const rect = stageWrap.getBoundingClientRect();
       const px = (e.clientX-rect.left), py=(e.clientY-rect.top);
-      const sizePx = (state.tool==='blur' ? state.blurSize : state.tool==='smudge' ? state.smudgeSize : state.tool==='smooth' ? state.smoothSize : state.tool==='eraser' ? state.eraserSize : state.tool==='lash' ? Math.max(12, state.lashLength*0.55) : state.tool==='eyebulge' ? state.eyeBulgeRadius*2 : state.size)*state.scale;
+      const sizePx = (state.tool==='blur' ? state.blurSize : state.tool==='smudge' ? state.smudgeSize : state.tool==='smooth' ? state.smoothSize : state.tool==='eraser' ? state.eraserSize : state.tool==='lash' ? Math.max(12, state.lashLength*0.55) : state.tool==='eyebulge' ? state.eyeBulgeRadius*2 : state.tool==='clone' ? state.cloneSize : state.size)*state.scale;
       cursorDot.style.display = showable ? 'block':'none';
       cursorDot.style.background = 'transparent';
       cursorDot.style.width = sizePx+'px';
@@ -3507,6 +3744,7 @@
       density: state.lashDensity, length: state.lashLength, curl: state.lashCurl,
       curlStyle: state.lashCurlStyle, thickness: state.lashThickness,
       randomness: state.lashRandom, side: state.lashSide, clump: state.lashClump, clumpStyle: state.lashClumpStyle,
+      shape: state.lashShape,
     });
     paintLashes(layer.ctx, lashes, state.color, state.lashOpacity/100, state.lashSoftness);
 
@@ -3545,6 +3783,25 @@
   // gradually lifts through the back half, no sudden kink), 'wispy' (natural
   // curl but each tip flicks off in its own random direction, for a
   // separated/undone look).
+  // How lash length varies along the eyelid (t: 0 at the trace's start, 1 at
+  // its end — so which physical corner is "long" depends on which way the
+  // person traced, same as curl/fan already do). Different shapes give
+  // different eye impressions without touching density/curl/etc:
+  //  natural: fuller in the middle, shorter at both corners (original look)
+  //  outer:   builds up toward the trace's end corner — たれ目/cat-eye, when
+  //           traced 目頭→目尻 as the app's own guidance already suggests
+  //  inner:   mirror of outer — builds up toward the trace's start corner
+  //  doll:    a sharper, narrower peak right in the middle — round "doll eye"
+  //  even:    flat — every lash the same length
+  function lashLenProfile(t, shape){
+    switch(shape){
+      case 'outer': return 0.42 + 0.58*Math.pow(t, 1.15);
+      case 'inner': return 0.42 + 0.58*Math.pow(1-t, 1.15);
+      case 'doll':  return 0.32 + 0.68*Math.pow(Math.sin(Math.PI*t), 1.7);
+      case 'even':  return 1;
+      default:      return 0.6 + 0.4*Math.sin(Math.PI*t); // natural
+    }
+  }
   function buildLashStrokes(guidePts, opts){
     const lens = arcLengths(guidePts);
     const total = lens[lens.length-1];
@@ -3642,7 +3899,7 @@
       let dy = ny*cosT + p.ty*sinT;
       const dl = Math.hypot(dx,dy)||1; dx/=dl; dy/=dl;
 
-      const lenMul = (0.6 + 0.4*Math.sin(Math.PI*t)) * (lenScale||1);   // shorter at both ends, fuller mid-lid; lenScale shrinks joined-clump filler strands
+    const lenMul = lashLenProfile(t, opts.shape) * (lenScale||1);   // shape of the length curve across the eyelid; lenScale shrinks joined-clump filler strands
       const lenJitter = 1 + (rng()-0.5)*(opts.randomness/100)*0.7;
       const L = Math.max(1, opts.length*lenMul*lenJitter);
       const bend = L*0.22*(opts.curl/100);
@@ -4118,6 +4375,7 @@
     smudge: document.getElementById('smudgeSheet'),
     smooth: document.getElementById('smoothSheet'),
     eyebulge: document.getElementById('eyeBulgeSheet'),
+    clone: document.getElementById('cloneSheet'),
     lash: document.getElementById('lashSheet'),
     color: document.getElementById('colorSheet'),
     layers: document.getElementById('layersSheet'),
@@ -4146,20 +4404,21 @@
   function updateBrushBtnLabel(){
     const label = document.querySelector('#brushToolBtn span');
     if(!label) return;
-    label.textContent = state.tool==='blur' ? 'ぼかし設定' : state.tool==='smudge' ? 'なぞる設定' : state.tool==='smooth' ? 'なじませ設定' : state.tool==='eyebulge' ? '目サイズ設定' : state.tool==='eraser' ? '消しゴム設定' : state.tool==='lash' ? 'まつ毛設定' : 'ブラシ設定';
+    label.textContent = state.tool==='blur' ? 'ぼかし設定' : state.tool==='smudge' ? 'なぞる設定' : state.tool==='smooth' ? 'なじませ設定' : state.tool==='eyebulge' ? '目サイズ設定' : state.tool==='clone' ? 'スタンプ設定' : state.tool==='eraser' ? '消しゴム設定' : state.tool==='lash' ? 'まつ毛設定' : 'ブラシ設定';
   }
   function targetSheetForTool(){
     if(state.tool==='blur') return 'blur';
     if(state.tool==='smudge') return 'smudge';
     if(state.tool==='smooth') return 'smooth';
     if(state.tool==='eyebulge') return 'eyebulge';
+    if(state.tool==='clone') return 'clone';
     if(state.tool==='eraser') return 'eraser';
     if(state.tool==='lash') return 'lash';
     return 'brush';
   }
-  document.getElementById('brushToolBtn').addEventListener('click', ()=>{ openSheet(targetSheetForTool()); updateBrushPreview(); updateBlurTargetLabel(); updateEraserPreview(); updateLashPreview(); updateSmoothPreview(); updateEyeBulgePreview(); });
+  document.getElementById('brushToolBtn').addEventListener('click', ()=>{ openSheet(targetSheetForTool()); updateBrushPreview(); updateBlurTargetLabel(); updateEraserPreview(); updateLashPreview(); updateSmoothPreview(); updateEyeBulgePreview(); updateClonePreview(); updateCloneSourceLabel(); });
   document.getElementById('colorToolBtn').addEventListener('click', ()=>openSheet('color'));
-  document.getElementById('layersHeaderBtn').addEventListener('click', ()=>{ renderLayerList(); openSheet('layers'); });
+  document.getElementById('layersHeaderBtn').addEventListener('click', ()=>{ openSheet('layers'); renderLayerList(); });
   document.getElementById('adjustToolBtn').addEventListener('click', ()=>{ updateUpscaleLabel(); updateBlurTargetLabel(); openSheet('adjust'); });
   document.getElementById('helpBtn').addEventListener('click', ()=>{ openSheet('help'); });
 
@@ -4216,9 +4475,18 @@
   }
 
   // brush sheet bindings
+  // Some `.val` slots are plain <span> readouts, others (太さ, まつ毛の各項目)
+  // are now editable <input type="number"> so exact values can be typed in
+  // directly instead of only dragging the slider. Both need to be kept in
+  // sync from the slider side, but a <span> has no `.value` and an <input>
+  // ignores `.textContent`, so every bind* helper below goes through this
+  // instead of picking one or the other by hand.
+  function setValDisplay(el, text){
+    if(el.tagName==='INPUT') el.value = text; else el.textContent = text;
+  }
   function bindRange(id, valId, key, suffix){
     const el = document.getElementById(id), vl = document.getElementById(valId);
-    el.addEventListener('input', ()=>{ state[key] = +el.value; vl.textContent = el.value + (suffix||''); updateBrushPreview(); });
+    el.addEventListener('input', ()=>{ state[key] = +el.value; setValDisplay(vl, el.value + (suffix||'')); updateBrushPreview(); });
   }
   // A plain linear slider forces a trade-off between fine control at small
   // sizes and enough headroom at large sizes — widen the range and small
@@ -4243,25 +4511,65 @@
       return Math.round(v*f)/f;
     }
     el.value = actualToRaw(state[key]);
-    vl.textContent = state[key];
+    setValDisplay(vl, state[key]);
     el.addEventListener('input', ()=>{
       const actual = rawToActual(+el.value);
       state[key] = actual;
-      vl.textContent = actual;
+      setValDisplay(vl, actual);
       updateBrushPreview();
     });
+    // Exposed so an editable number input for the same slider can convert a
+    // typed value back into the slider's raw position — see wireEditableValue.
+    el._actualToRaw = actualToRaw;
   }
-  bindPowerRange('sizeSlider','sizeVal','size', 0.3, 120, 2.4, 1);
+  bindPowerRange('sizeSlider','sizeVal','size', 0.1, 120, 2.6, 1);
+
+  // ---------------- よく使う太さ (recent brush sizes) ----------------
+  // Rather than a fixed set of preset numbers that may not match how any
+  // particular person actually draws, this just remembers whichever sizes
+  // they've actually dialed in before — so "sizes you've already made" grows
+  // naturally from real use, and stays useful across sessions since it's
+  // saved to localStorage rather than reset every reload.
+  let recentSizes = [];
+  try { recentSizes = JSON.parse(localStorage.getItem('kahitsu_recentSizes')||'[]'); } catch(e){ recentSizes = []; }
+  function renderRecentSizes(){
+    const row = document.getElementById('recentSizeRow');
+    if(!row) return;
+    row.innerHTML = '';
+    recentSizes.forEach(sz=>{
+      const chip = document.createElement('div');
+      chip.className = 'presetChip' + (Math.abs(state.size-sz)<0.05 ? ' sel' : '');
+      chip.textContent = sz;
+      chip.addEventListener('click', ()=>{
+        const slider = document.getElementById('sizeSlider');
+        slider.value = slider._actualToRaw(sz);
+        slider.dispatchEvent(new Event('input', {bubbles:true}));
+      });
+      row.appendChild(chip);
+    });
+  }
+  function recordRecentSize(){
+    const sz = state.size;
+    recentSizes = [sz, ...recentSizes.filter(v=>Math.abs(v-sz)>=0.05)].slice(0,8);
+    try { localStorage.setItem('kahitsu_recentSizes', JSON.stringify(recentSizes)); } catch(e){ /* storage unavailable — recent sizes just won't persist */ }
+    renderRecentSizes();
+  }
+  // 'change' (not 'input') so this records once per finished drag/typed
+  // value, not dozens of times while the slider is still being dragged.
+  document.getElementById('sizeSlider').addEventListener('change', recordRecentSize);
+  document.getElementById('sizeVal').addEventListener('change', recordRecentSize);
+  renderRecentSizes();
+
   bindRange('opSlider','opVal','opacity','');
   bindRange('softSlider','softVal','softness','');
   bindRange('stabSlider','stabVal','stabilization','');
   bindRange('taperInSlider','taperInVal','taperIn','%');
   bindRange('taperOutSlider','taperOutVal','taperOut','%');
-  bindPowerRange('blurSizeSlider','blurSizeVal','blurSize', 8, 260, 2.2, 0);
+  bindPowerRange('blurSizeSlider','blurSizeVal','blurSize', 2, 260, 2.4, 0);
   bindRange('blurStrengthSlider','blurStrengthVal','blurStrength','');
-  bindPowerRange('smudgeSizeSlider','smudgeSizeVal','smudgeSize', 6, 260, 2.2, 0);
+  bindPowerRange('smudgeSizeSlider','smudgeSizeVal','smudgeSize', 2, 260, 2.4, 0);
   bindRange('smudgeStrengthSlider','smudgeStrengthVal','smudgeStrength','');
-  bindPowerRange('smoothSizeSlider','smoothSizeVal','smoothSize', 6, 260, 2.2, 0);
+  bindPowerRange('smoothSizeSlider','smoothSizeVal','smoothSize', 2, 260, 2.4, 0);
   bindRange('smoothStrengthSlider','smoothStrengthVal','smoothStrength','');
   bindRange('glitterSizeSlider','glitterSizeVal','glitterSize','');
   bindRange('glitterDensitySlider','glitterDensityVal','glitterDensity','');
@@ -4320,31 +4628,89 @@
       density: state.lashDensity, length: state.lashLength, curl: state.lashCurl,
       curlStyle: state.lashCurlStyle, thickness: state.lashThickness,
       randomness: state.lashRandom, side: state.lashSide, clump: state.lashClump, clumpStyle: state.lashClumpStyle,
+      shape: state.lashShape,
     });
     const off = document.createElement('canvas');
     off.width = naturalW; off.height = naturalH;
     paintLashes(off.getContext('2d'), lashes, state.color, state.lashOpacity/100, state.lashSoftness);
 
-    const scale = Math.min(W/naturalW, H/naturalH) * 0.94;
-    const dw = naturalW*scale, dh = naturalH*scale;
-    ctx.drawImage(off, 0,0,naturalW,naturalH, (W-dw)/2, (H-dh)/2, dw, dh);
+    // Auto-zoom: at a small 長さ (or a subtle カール), the actual lashes only
+    // take up a small corner of the fixed-size guide canvas, so a low value
+    // used to render as a tiny, hard-to-judge smudge in the preview box.
+    // This measures the real bounding box of what got drawn (root/control/
+    // tip points bound a bezier curve exactly, by the convex-hull property)
+    // and fits the crop to THAT instead of always showing the whole guide —
+    // so the preview zooms in automatically as the design gets smaller.
+    let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+    lashes.forEach(l=>{
+      [[l.rootX,l.rootY],[l.ctrl1X,l.ctrl1Y],[l.ctrl2X,l.ctrl2Y],[l.tipX,l.tipY]].forEach(([x,y])=>{
+        if(x<minX)minX=x; if(x>maxX)maxX=x; if(y<minY)minY=y; if(y>maxY)maxY=y;
+      });
+    });
+    if(!lashes.length || !isFinite(minX)){ minX=0; minY=0; maxX=naturalW; maxY=naturalH; }
+    const pad = 22;
+    minX=Math.max(0,minX-pad); minY=Math.max(0,minY-pad);
+    maxX=Math.min(naturalW,maxX+pad); maxY=Math.min(naturalH,maxY+pad);
+    // Never zoom in past ~1/4 of the full guide width, so a single tiny
+    // cluster of lashes doesn't blow up into an unrecognizable close-up.
+    const minCropW = naturalW*0.25, minCropH = naturalH*0.25;
+    let cropW = Math.max(minCropW, maxX-minX), cropH = Math.max(minCropH, maxY-minY);
+    let cropX = Math.min(Math.max(0,(minX+maxX)/2-cropW/2), naturalW-cropW);
+    let cropY = Math.min(Math.max(0,(minY+maxY)/2-cropH/2), naturalH-cropH);
+
+    const scale = Math.min(W/cropW, H/cropH) * 0.94;
+    const dw = cropW*scale, dh = cropH*scale;
+    ctx.drawImage(off, cropX,cropY,cropW,cropH, (W-dw)/2, (H-dh)/2, dw, dh);
   }
   function bindLashRange(id, valId, key, suffix, digits){
     const el = document.getElementById(id), vl = document.getElementById(valId);
     el.addEventListener('input', ()=>{
       state[key] = +el.value;
-      vl.textContent = (digits ? (+el.value).toFixed(digits) : el.value) + (suffix||'');
+      setValDisplay(vl, (digits ? (+el.value).toFixed(digits) : el.value) + (suffix||''));
       updateLashPreview();
     });
   }
   bindLashRange('lashDensitySlider','lashDensityVal','lashDensity','');
   bindLashRange('lashClumpSlider','lashClumpVal','lashClump','');
-  bindLashRange('lashLengthSlider','lashLengthVal','lashLength','');
+  bindPowerRange('lashLengthSlider','lashLengthVal','lashLength', 2, 160, 2.2, 0);
+  document.getElementById('lashLengthSlider').addEventListener('input', updateLashPreview);
   bindLashRange('lashCurlSlider','lashCurlVal','lashCurl','');
   bindLashRange('lashThicknessSlider','lashThicknessVal','lashThickness','',1);
   bindLashRange('lashRandomSlider','lashRandomVal','lashRandom','');
   bindLashRange('lashOpacitySlider','lashOpacityVal','lashOpacity','');
   bindLashRange('lashSoftnessSlider','lashSoftnessVal','lashSoftness','');
+
+  // Lets the now-editable 太さ / まつ毛 number fields be typed into directly —
+  // reuses whichever slider they're paired with (including its power-curve
+  // conversion, if it has one) so typing a value stays perfectly consistent
+  // with dragging to the same value.
+  function wireEditableValue(sliderId, valId){
+    const slider = document.getElementById(sliderId), input = document.getElementById(valId);
+    if(!input || input.tagName!=='INPUT') return;
+    const commit = ()=>{
+      let v = parseFloat(input.value);
+      if(isNaN(v)){ slider.dispatchEvent(new Event('input', {bubbles:true})); return; }
+      if(slider._actualToRaw){
+        slider.value = slider._actualToRaw(v);
+      } else {
+        v = Math.max(+slider.min, Math.min(+slider.max, v));
+        slider.value = v;
+      }
+      slider.dispatchEvent(new Event('input', {bubbles:true}));
+    };
+    input.addEventListener('change', commit);
+    input.addEventListener('keydown', e=>{ if(e.key==='Enter') input.blur(); });
+  }
+  wireEditableValue('sizeSlider','sizeVal');
+  wireEditableValue('lashDensitySlider','lashDensityVal');
+  wireEditableValue('lashClumpSlider','lashClumpVal');
+  wireEditableValue('lashLengthSlider','lashLengthVal');
+  wireEditableValue('lashCurlSlider','lashCurlVal');
+  wireEditableValue('lashThicknessSlider','lashThicknessVal');
+  wireEditableValue('lashRandomSlider','lashRandomVal');
+  wireEditableValue('lashOpacitySlider','lashOpacityVal');
+  wireEditableValue('lashSoftnessSlider','lashSoftnessVal');
+
   document.querySelectorAll('[data-lashside]').forEach(el=>{
     el.addEventListener('click', ()=>{
       document.querySelectorAll('[data-lashside]').forEach(b=>b.classList.remove('sel'));
@@ -4369,7 +4735,87 @@
       updateLashPreview();
     });
   });
+  document.querySelectorAll('[data-lashshape]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      document.querySelectorAll('[data-lashshape]').forEach(b=>b.classList.remove('sel'));
+      el.classList.add('sel');
+      state.lashShape = el.dataset.lashshape;
+      updateLashPreview();
+    });
+  });
   updateLashPreview();
+
+  // ---------------- まつ毛プリセット (save/recall a full lash style) ----------------
+  const LASH_PRESET_KEYS = ['lashDensity','lashClump','lashClumpStyle','lashLength','lashCurl','lashCurlStyle','lashShape','lashThickness','lashRandom','lashOpacity','lashSoftness'];
+  let lashPresets = [];
+  try { lashPresets = JSON.parse(localStorage.getItem('kahitsu_lashPresets')||'[]'); } catch(e){ lashPresets = []; }
+  function saveLashPresets(){
+    try { localStorage.setItem('kahitsu_lashPresets', JSON.stringify(lashPresets)); } catch(e){ /* storage unavailable — presets just won't persist this session */ }
+  }
+  function applyLashPreset(values){
+    Object.assign(state, values);
+    // Re-sync every slider/number field + the two toggle-button groups from
+    // the newly-applied state, the same way syncAdjustUI does for 画像調整 —
+    // otherwise the sliders would keep showing their old positions even
+    // though state (and therefore what gets drawn) already changed.
+    document.getElementById('lashLengthSlider').value = document.getElementById('lashLengthSlider')._actualToRaw(state.lashLength);
+    setValDisplay(document.getElementById('lashLengthVal'), state.lashLength);
+    const plain = [['lashDensitySlider','lashDensityVal'],['lashClumpSlider','lashClumpVal'],['lashCurlSlider','lashCurlVal'],
+     ['lashRandomSlider','lashRandomVal'],['lashOpacitySlider','lashOpacityVal'],['lashSoftnessSlider','lashSoftnessVal']];
+    const keyOf = {lashDensitySlider:'lashDensity',lashClumpSlider:'lashClump',lashCurlSlider:'lashCurl',lashRandomSlider:'lashRandom',lashOpacitySlider:'lashOpacity',lashSoftnessSlider:'lashSoftness'};
+    plain.forEach(([sid,vid])=>{
+      const el = document.getElementById(sid), vl = document.getElementById(vid);
+      el.value = state[keyOf[sid]];
+      setValDisplay(vl, el.value);
+    });
+    const tEl = document.getElementById('lashThicknessSlider'), tVl = document.getElementById('lashThicknessVal');
+    tEl.value = state.lashThickness;
+    setValDisplay(tVl, (+tEl.value).toFixed(1));
+    document.querySelectorAll('[data-lashclumpstyle]').forEach(b=>b.classList.toggle('sel', b.dataset.lashclumpstyle===state.lashClumpStyle));
+    document.querySelectorAll('[data-lashcurl]').forEach(b=>b.classList.toggle('sel', b.dataset.lashcurl===state.lashCurlStyle));
+    document.querySelectorAll('[data-lashshape]').forEach(b=>b.classList.toggle('sel', b.dataset.lashshape===state.lashShape));
+    updateLashPreview();
+  }
+  function renderLashPresets(){
+    const row = document.getElementById('lashPresetRow');
+    row.innerHTML = '';
+    lashPresets.forEach((p,idx)=>{
+      const chip = document.createElement('div');
+      chip.className = 'presetChip';
+      chip.style.cssText = 'display:flex;align-items:center;gap:6px;';
+      const label = document.createElement('span');
+      label.textContent = p.name;
+      const del = document.createElement('span');
+      del.textContent = '✕';
+      del.style.cssText = 'opacity:0.6;';
+      del.addEventListener('click', (ev)=>{
+        ev.stopPropagation();
+        lashPresets.splice(idx,1);
+        saveLashPresets();
+        renderLashPresets();
+      });
+      chip.appendChild(label); chip.appendChild(del);
+      chip.addEventListener('click', ()=>{
+        applyLashPreset(p.values);
+        showToast(`「${p.name}」を適用しました`);
+      });
+      row.appendChild(chip);
+    });
+  }
+  document.getElementById('lashPresetSaveBtn').addEventListener('click', ()=>{
+    const nameInput = document.getElementById('lashPresetNameInput');
+    const name = nameInput.value.trim();
+    if(!name){ showToast('プリセット名を入れてね'); return; }
+    const values = {};
+    LASH_PRESET_KEYS.forEach(k=> values[k]=state[k]);
+    lashPresets = lashPresets.filter(p=>p.name!==name); // same name overwrites
+    lashPresets.push({name, values});
+    saveLashPresets();
+    renderLashPresets();
+    nameInput.value = '';
+    showToast(`「${name}」として保存しました`);
+  });
+  renderLashPresets();
 
   // Eraser: its own size/opacity, independent of the pen's — bound directly
   // (not via bindRange, since that also refreshes the pen's ink brush preview,
@@ -4384,9 +4830,9 @@
   const eraserSizeSlider = document.getElementById('eraserSizeSlider');
   const eraserSizeVal = document.getElementById('eraserSizeVal');
   {
-    const ERASER_MIN=1, ERASER_MAX=150, ERASER_POWER=2.2, RAW_MAX=1000;
+    const ERASER_MIN=0.3, ERASER_MAX=150, ERASER_POWER=2.6, RAW_MAX=1000;
     const actualToRaw = a => Math.round(Math.pow(Math.max(0,Math.min(1,(a-ERASER_MIN)/(ERASER_MAX-ERASER_MIN))), 1/ERASER_POWER)*RAW_MAX);
-    const rawToActual = r => Math.round(ERASER_MIN + (ERASER_MAX-ERASER_MIN)*Math.pow(Math.max(0,Math.min(1,r/RAW_MAX)), ERASER_POWER));
+    const rawToActual = r => { const v = ERASER_MIN + (ERASER_MAX-ERASER_MIN)*Math.pow(Math.max(0,Math.min(1,r/RAW_MAX)), ERASER_POWER); return Math.round(v*10)/10; };
     eraserSizeSlider.min = 0; eraserSizeSlider.max = RAW_MAX; eraserSizeSlider.step = 1;
     eraserSizeSlider.value = actualToRaw(state.eraserSize);
     eraserSizeVal.textContent = state.eraserSize;
@@ -4622,6 +5068,25 @@
     updateBlurTargetLabel();
     showToast('元画像に統合しました');
   }
+  // Reorders a layer within the stack (dir: 1 = toward the front/top,
+  // -1 = toward the back, just above the base photo). Since paint order on
+  // screen follows DOM order (later child = drawn on top), moving a layer
+  // in the `layers` array alone isn't enough — the actual <canvas> elements
+  // have to be re-appended to `world` in the new order too. appendChild on
+  // an element already in the DOM just relocates it rather than duplicating
+  // it, so rebuilding the whole stacking order from the array each time is
+  // simpler and safer than trying to swap two elements' positions by hand.
+  function moveLayer(layer, dir){
+    const idx = layers.findIndex(l=>l.id===layer.id);
+    const newIdx = idx+dir;
+    if(idx<0 || newIdx<0 || newIdx>=layers.length) return;
+    [layers[idx], layers[newIdx]] = [layers[newIdx], layers[idx]];
+    layers.forEach(l=>{
+      world.appendChild(l.canvas);
+      if(l.ghostCanvas) world.appendChild(l.ghostCanvas);
+    });
+    renderLayerList();
+  }
   function mergeLayerDown(layer){
     const idx = layers.findIndex(l=>l.id===layer.id);
     if(idx<0) return;
@@ -4669,6 +5134,15 @@
   });
 
   function renderLayerList(){
+    // Building this list does a full-resolution toDataURL() thumbnail encode
+    // for every layer — cheap with a couple of layers, but that cost scales
+    // with layer count, and this function used to get called (redundantly)
+    // after almost every edit even while the layers panel was closed and
+    // nobody could see it. With enough layers those wasted full-canvas
+    // encodes piling up on the main thread is exactly what was showing up
+    // as "everything gets heavy/glitchy" — skipping entirely while hidden
+    // fixes that at the source, for every call site at once.
+    if(!sheets.layers.classList.contains('show')) return;
     const list = document.getElementById('layerList');
     list.innerHTML='';
     for(let i=layers.length-1;i>=0;i--){
@@ -4742,6 +5216,19 @@
       row.appendChild(info);
 
       const btns = document.createElement('div'); btns.className='layerBtns';
+      const moveRow = document.createElement('div'); moveRow.style.cssText='display:flex;gap:4px;';
+      const upBtn = document.createElement('button'); upBtn.className='miniBtn'; upBtn.textContent='▲';
+      upBtn.title = '1つ上のレイヤーと入れ替える';
+      upBtn.disabled = i===layers.length-1;
+      upBtn.style.opacity = upBtn.disabled ? '0.35' : '1';
+      upBtn.addEventListener('click', ()=> moveLayer(layer, 1));
+      const downBtn = document.createElement('button'); downBtn.className='miniBtn'; downBtn.textContent='▼';
+      downBtn.title = '1つ下のレイヤーと入れ替える';
+      downBtn.disabled = i===0;
+      downBtn.style.opacity = downBtn.disabled ? '0.35' : '1';
+      downBtn.addEventListener('click', ()=> moveLayer(layer, -1));
+      moveRow.appendChild(upBtn); moveRow.appendChild(downBtn);
+      btns.appendChild(moveRow);
       const visBtn = document.createElement('button'); visBtn.className='miniBtn'; visBtn.textContent = layer.visible?'👁':'—';
       visBtn.addEventListener('click', ()=>{ layer.visible=!layer.visible; applyLayerStyle(layer); visBtn.textContent = layer.visible?'👁':'—'; });
       const mergeBtn = document.createElement('button'); mergeBtn.className='miniBtn merge'; mergeBtn.textContent='⬇';
@@ -4775,7 +5262,7 @@
       row.appendChild(btns);
 
       row.addEventListener('click', (ev)=>{
-        if(ev.target===opInput || ev.target===visBtn || ev.target===mergeBtn || ev.target===clearBtn || ev.target===delBtn || ev.target===blendSelect) return;
+        if(ev.target===opInput || ev.target===visBtn || ev.target===mergeBtn || ev.target===clearBtn || ev.target===delBtn || ev.target===blendSelect || ev.target===upBtn || ev.target===downBtn) return;
         state.activeLayerId = layer.id;
         renderLayerList();
         updateBlurTargetLabel();
@@ -4841,6 +5328,8 @@
     if(el3) el3.textContent = label;
     const el4 = document.getElementById('eyeBulgeTargetLabel');
     if(el4) el4.textContent = label;
+    const el5 = document.getElementById('cloneTargetLabel');
+    if(el5) el5.textContent = label;
   }
   document.getElementById('addLayerBtn').addEventListener('click', ()=>{
     if(!state.imgW){ showToast('先に写真を読み込んでね'); return; }
