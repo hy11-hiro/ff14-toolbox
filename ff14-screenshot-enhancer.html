@@ -210,6 +210,17 @@
   .helpSection[open] summary::before{ transform:rotate(90deg); }
   .helpSection p, .helpSection ul, .helpSection ol{ font-size:11.5px; color:var(--text-dim); line-height:1.7; margin:0 0 10px; padding-left:0; }
   .helpSection ul, .helpSection ol{ padding-left:18px; }
+
+  /* 画像調整の各カテゴリを折りたたみ式にして、タブ全体の縦の長さを短くする */
+  .adjustSection{ border:1px solid var(--line); border-radius:14px; padding:2px 12px; margin-bottom:8px; background:var(--bg-panel2); }
+  .adjustSection summary{ padding:10px 0; font-size:12px; font-weight:700; color:var(--gold); cursor:pointer; list-style:none; display:flex; align-items:center; }
+  .adjustSection summary::-webkit-details-marker{ display:none; }
+  .adjustSection summary::before{ content:'▸'; display:inline-block; margin-right:7px; color:var(--gold); transition:transform .15s; flex:none; font-size:10px; }
+  .adjustSection[open] summary::before{ transform:rotate(90deg); }
+  .adjustSection .adjustBody{ padding-bottom:10px; }
+
+  /* まつ毛の小窓プレビュー — sheet を閉じて実際になぞっている間もサイズ比較
+     できるよう、画面上に浮かせておくウィンドウ */
   .helpSection li{ margin-bottom:4px; }
   .helpSection table{ width:100%; border-collapse:collapse; margin:0 0 10px; font-size:11px; }
   .helpSection th{ text-align:left; color:var(--gold); font-weight:700; padding:6px 8px 6px 0; vertical-align:top; white-space:nowrap; width:1%; }
@@ -242,6 +253,20 @@
   #recentSizeRow .presetChip{ min-width:44px; min-height:38px; padding:8px 14px; font-size:15px; font-weight:700;
     display:flex; align-items:center; justify-content:center; color:var(--text); }
   #recentSizeRow .presetChip.sel{ color:var(--gold); }
+  /* CSP風のサイズプリセット一覧 (size picker popup) */
+  .sizePickBtn{ flex:none; width:26px; height:26px; border-radius:8px; background:var(--bg-sheet); border:1px solid var(--line); color:var(--text-dim); font-size:13px; display:flex; align-items:center; justify-content:center; padding:0; }
+  .sizePickerBackdrop{ position:fixed; inset:0; background:rgba(10,8,20,.55); z-index:200; display:none; align-items:center; justify-content:center; padding:20px; }
+  .sizePickerBackdrop.show{ display:flex; }
+  .sizePickerModal{ background:var(--bg-sheet); border:1px solid var(--line); border-radius:20px; padding:16px; max-width:360px; width:100%; max-height:74vh; overflow-y:auto; }
+  .sizePickerTitle{ font-size:12.5px; font-weight:700; color:var(--gold); margin-bottom:10px; }
+  .sizePickerGrid{ display:grid; grid-template-columns:repeat(5,1fr); gap:12px 8px; }
+  .sizePickerCell{ display:flex; flex-direction:column; align-items:center; gap:5px; padding:6px 2px; border-radius:12px; }
+  .sizePickerCell.sel{ background:rgba(243,205,142,.12); }
+  .sizePickerDotWrap{ width:36px; height:36px; display:flex; align-items:center; justify-content:center; }
+  .sizePickerDot{ background:var(--text); border-radius:50%; flex:none; }
+  .sizePickerCell.sel .sizePickerDot{ background:var(--gold); }
+  .sizePickerLabel{ font-size:10px; color:var(--text-dim); }
+  .sizePickerCell.sel .sizePickerLabel{ color:var(--gold); font-weight:700; }
   .transformRow{ display:flex; gap:8px; margin-bottom:6px; }
   .xbtn{ flex:1; padding:11px 4px; border-radius:14px; background:var(--bg-panel2); border:1px solid var(--line);
     color:var(--text); font-size:11px; display:flex; flex-direction:column; align-items:center; gap:4px; }
@@ -409,10 +434,10 @@
       <button class="tool" data-tool="blur"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9" stroke-dasharray="2 3"/><circle cx="12" cy="12" r="3"/></svg><span>ぼかし</span></button>
       <button class="tool" data-tool="smudge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21c-2-3-2-6 0-9s2-6 0-9"/><path d="M13 21c-1.6-3-1.6-6 0-9s1.6-6 0-9"/><path d="M18 21c-1.2-3-1.2-6 0-9s1.2-6 0-9"/></svg><span>なぞる</span></button>
       <button class="tool" data-tool="smooth"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17c3-6 3-11 9-11s3 8 9 8"/><path d="M3 20c2.5-2 5-2 7 0s4.5 2 7 0"/></svg><span>なじませ</span></button>
+      <button class="tool" data-tool="sharpenBrush"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v6M12 16v6M2 12h6M16 12h6"/><path d="M5 5l3 3M16 16l3 3M19 5l-3 3M8 16l-3 3"/></svg><span>部分シャープ</span></button>
       <button class="tool" data-tool="eraser"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 21-4.3-4.3a1 1 0 0 1 0-1.4l9.6-9.6a1 1 0 0 1 1.4 0l5.6 5.6a1 1 0 0 1 0 1.4L13 18"/><path d="M22 21H7"/></svg><span>消しゴム</span></button>
       <button class="tool" data-tool="lash"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 15c4-4 14-4 18 0"/><path d="M7.2 13c-.9-1.7-1.1-2.8-.9-3.9"/><path d="M12 12.4c0-1.9.2-3 .6-3.9"/><path d="M16.8 13c.9-1.7 1.1-2.8.9-3.9"/></svg><span>まつ毛</span></button>
       <button class="tool" data-tool="eyebulge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3.2"/></svg><span>目サイズ</span></button>
-      <button class="tool" data-tool="clone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="12" height="12" rx="2"/><path d="M9 15v3a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-3"/></svg><span>スタンプ</span></button>
       <button class="tool" id="brushToolBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20c1-4 2-8 6-8s5 4 6 8"/><circle cx="17" cy="6" r="3"/></svg><span>ブラシ設定</span></button>
     </div>
     <div class="toolRow">
@@ -445,6 +470,7 @@
     <div class="btype" data-btype="soft"><span class="bicon">☁️</span>エアブラシ</div>
     <div class="btype" data-btype="marker"><span class="bicon">🖊️</span>厚塗り</div>
     <div class="btype" data-btype="glitter"><span class="bicon">✨</span>グリッター</div>
+    <div class="btype" data-btype="texture"><span class="bicon">🖼️</span>カスタム質感</div>
   </div>
 
   <div id="glitterControls" style="display:none;">
@@ -452,7 +478,27 @@
     <div class="row"><label>ラメの量</label><input type="range" id="glitterDensitySlider" min="10" max="100" value="55"><span class="val" id="glitterDensityVal">55</span></div>
   </div>
 
-  <div class="row"><label>太さ</label><input type="range" id="sizeSlider" min="0" max="1000" step="1" value="500"><input type="number" class="valNum" id="sizeVal" value="10"></div>
+  <div id="textureControls" style="display:none;">
+    <div class="presetRow" id="textureBuiltinRow" style="flex-wrap:wrap;overflow:visible;">
+      <div class="presetChip sel" data-texture="none">なし</div>
+      <div class="presetChip" data-texture="paper">紙のザラつき</div>
+      <div class="presetChip" data-texture="canvas">キャンバス地</div>
+      <div class="presetChip" data-texture="grain">砂目（鉛筆）</div>
+      <div class="presetChip" data-texture="ink">滲みインク</div>
+    </div>
+    <p style="font-size:10.5px;color:var(--text-dim);line-height:1.6;margin:-6px 0 10px;">上のボタンから選ぶだけでOK（ファイルを用意する必要はありません）。もし手元に使いたい画像（紙や布の写真など）があれば、下から読み込んで自分だけの質感にすることもできます。</p>
+    <button id="textureUploadBtn" style="width:100%;padding:9px;border-radius:12px;border:1.5px dashed var(--line);background:var(--bg-sheet);color:var(--text-dim);font-size:12px;font-family:'M PLUS Rounded 1c';margin-bottom:8px;">📷 好きな画像を質感として使う</button>
+    <input type="file" id="textureUploadInput" accept="image/*" style="display:none;">
+    <div id="textureThumbRow" style="display:none;align-items:center;gap:10px;margin-bottom:8px;">
+      <img id="textureThumb" style="width:44px;height:44px;object-fit:cover;border-radius:8px;border:1px solid var(--line);">
+      <span style="font-size:11px;color:var(--text-dim);flex:1;">この画像を質感として使用中</span>
+      <button id="textureRemoveBtn" class="miniBtn">✕</button>
+    </div>
+    <div class="row"><label>質感の大きさ</label><input type="range" id="textureScaleSlider" min="20" max="400" value="100"><span class="val" id="textureScaleVal">100</span></div>
+    <p style="font-size:10.5px;color:var(--text-dim);line-height:1.6;margin:-4px 0 12px;">ペンで描いた線の中に、選んだ質感が写り込むようになります。ブラウザに保存されるので次回もそのまま使えます。</p>
+  </div>
+
+  <div class="row"><label>太さ</label><input type="range" id="sizeSlider" min="0" max="1000" step="1" value="500"><input type="number" class="valNum" id="sizeVal" value="10"><button class="sizePickBtn" data-sizepick="sizeSlider" data-min="0.1" data-max="120">⊞</button></div>
   <div class="presetRow" id="recentSizeRow" style="flex-wrap:wrap;overflow:visible;margin-top:2px;gap:10px;"></div>
   <div class="row"><label>不透明度</label><input type="range" id="opSlider" min="1" max="100" value="100"><span class="val" id="opVal">100</span></div>
   <div class="row"><label>ふちのやわらかさ</label><input type="range" id="softSlider" min="0" max="100" value="0"><span class="val" id="softVal">0</span></div>
@@ -473,7 +519,7 @@
 <div class="sheet" id="eraserSheet">
   <div class="sheetHandle"></div>
   <div class="sheetTitle">🧽 消しゴム設定</div>
-  <div class="row"><label>消しゴムの大きさ</label><input type="range" id="eraserSizeSlider" min="0" max="1000" step="1" value="500"><span class="val" id="eraserSizeVal">24</span></div>
+  <div class="row"><label>消しゴムの大きさ</label><input type="range" id="eraserSizeSlider" min="0" max="1000" step="1" value="500"><span class="val" id="eraserSizeVal">24</span><button class="sizePickBtn" data-sizepick="eraserSizeSlider" data-min="0.3" data-max="150">⊞</button></div>
   <div class="previewWrap">
     <div id="eraserSizePreview" style="border-radius:50%;background:rgba(255,255,255,.12);border:2px dashed var(--text-dim);"></div>
   </div>
@@ -485,7 +531,7 @@
 <div class="sheet" id="blurSheet">
   <div class="sheetHandle"></div>
   <div class="sheetTitle">💫 ぼかし設定</div>
-  <div class="row"><label>ブラシの太さ</label><input type="range" id="blurSizeSlider" min="0" max="1000" step="1" value="500"><span class="val" id="blurSizeVal">90</span></div>
+  <div class="row"><label>ブラシの太さ</label><input type="range" id="blurSizeSlider" min="0" max="1000" step="1" value="500"><span class="val" id="blurSizeVal">90</span><button class="sizePickBtn" data-sizepick="blurSizeSlider" data-min="2" data-max="260">⊞</button></div>
   <div class="previewWrap">
     <div id="blurSizePreview" style="border-radius:50%;background:rgba(127,224,255,.35);border:2px solid var(--crystal);"></div>
   </div>
@@ -498,7 +544,7 @@
 <div class="sheet" id="smudgeSheet">
   <div class="sheetHandle"></div>
   <div class="sheetTitle">🫳 なぞる設定</div>
-  <div class="row"><label>指の太さ</label><input type="range" id="smudgeSizeSlider" min="0" max="1000" step="1" value="500"><span class="val" id="smudgeSizeVal">70</span></div>
+  <div class="row"><label>指の太さ</label><input type="range" id="smudgeSizeSlider" min="0" max="1000" step="1" value="500"><span class="val" id="smudgeSizeVal">70</span><button class="sizePickBtn" data-sizepick="smudgeSizeSlider" data-min="2" data-max="260">⊞</button></div>
   <div class="previewWrap">
     <div id="smudgeSizePreview" style="border-radius:50%;background:rgba(127,224,255,.35);border:2px solid var(--crystal);"></div>
   </div>
@@ -511,13 +557,26 @@
 <div class="sheet" id="smoothSheet">
   <div class="sheetHandle"></div>
   <div class="sheetTitle">🪶 なじませ設定</div>
-  <div class="row"><label>ブラシの太さ</label><input type="range" id="smoothSizeSlider" min="0" max="1000" step="1" value="500"><span class="val" id="smoothSizeVal">60</span></div>
+  <div class="row"><label>ブラシの太さ</label><input type="range" id="smoothSizeSlider" min="0" max="1000" step="1" value="500"><span class="val" id="smoothSizeVal">60</span><button class="sizePickBtn" data-sizepick="smoothSizeSlider" data-min="2" data-max="260">⊞</button></div>
   <div class="previewWrap">
     <div id="smoothSizePreview" style="border-radius:50%;background:rgba(127,224,255,.35);border:2px solid var(--crystal);"></div>
   </div>
   <div class="row"><label>なじませ強さ</label><input type="range" id="smoothStrengthSlider" min="1" max="100" value="45"><span class="val" id="smoothStrengthVal">45</span></div>
   <p style="font-size:11.5px;color:var(--text-dim);line-height:1.7;margin:0 0 8px;">「ぼかし」と違って、髪の毛のフチのようなギザギザした境目だけを狙ってなめらかにします。ベタ塗りの部分やディテールはあまり変化しないので、写真全体をぼかさずにジャギーだけ和らげたい時向けです。<b style="color:var(--gold);">今選んでいるレイヤーだけ</b>に効きます。</p>
   <p style="font-size:11.5px;color:var(--crystal);line-height:1.6;margin:0;">🎯 今の対象：<span id="smoothTargetLabel">-</span>（レイヤー一覧で切り替えられます）</p>
+</div>
+
+<!-- 部分シャープ (local sharpen brush) settings sheet -->
+<div class="sheet" id="sharpenBrushSheet">
+  <div class="sheetHandle"></div>
+  <div class="sheetTitle">🔪 部分シャープ設定</div>
+  <div class="row"><label>ブラシの太さ</label><input type="range" id="sharpenBrushSizeSlider" min="0" max="1000" step="1" value="500"><span class="val" id="sharpenBrushSizeVal">40</span><button class="sizePickBtn" data-sizepick="sharpenBrushSizeSlider" data-min="4" data-max="200">⊞</button></div>
+  <div class="previewWrap">
+    <div id="sharpenBrushSizePreview" style="border-radius:50%;background:rgba(127,224,255,.35);border:2px solid var(--crystal);"></div>
+  </div>
+  <div class="row"><label>強さ</label><input type="range" id="sharpenBrushStrengthSlider" min="1" max="100" value="55"><span class="val" id="sharpenBrushStrengthVal">55</span></div>
+  <p style="font-size:11.5px;color:var(--text-dim);line-height:1.7;margin:0 0 8px;">画像調整の「シャープ」は写真全体にかかりますが、これはなぞった場所だけをくっきりさせます。瞳や刺繍の細部など、ピンポイントで際立たせたい所に。<b style="color:var(--gold);">今選んでいるレイヤーだけ</b>に効きます。</p>
+  <p style="font-size:11.5px;color:var(--crystal);line-height:1.6;margin:0;">🎯 今の対象：<span id="sharpenBrushTargetLabel">-</span>（レイヤー一覧で切り替えられます）</p>
 </div>
 
 <!-- 目を大きく／小さく (eye bulge/pinch spot warp) settings sheet -->
@@ -537,26 +596,10 @@
   <p style="font-size:11.5px;color:var(--crystal);line-height:1.6;margin:0;">🎯 今の対象：<span id="eyeBulgeTargetLabel">-</span>（レイヤー一覧で切り替えられます）</p>
 </div>
 
-<!-- スタンプ (clone stamp) settings sheet -->
-<div class="sheet" id="cloneSheet">
-  <div class="sheetHandle"></div>
-  <div class="sheetTitle">🪄 スタンプ設定</div>
-  <p style="font-size:11.5px;color:var(--text-dim);line-height:1.7;margin:0 0 8px;">近くの綺麗な場所をコピーして、透かし文字や小物などを自然に消せるツールだよ。①下のボタンでお手本にする場所（コピー元）を選ぶ → ②消したい場所をなぞる、の2ステップ。なぞっている間、コピー元との位置関係を保ったまま追従してコピーされるよ。<b style="color:var(--gold);">今選んでいるレイヤーだけ</b>に効きます。</p>
-  <button id="cloneSetSourceBtn" style="width:100%;padding:10px;border-radius:14px;border:1.5px solid var(--gold);background:rgba(243,205,142,.08);color:var(--gold);font-weight:700;font-size:12.5px;font-family:'M PLUS Rounded 1c';margin-bottom:6px;">① コピー元を指定</button>
-  <p style="font-size:11.5px;color:var(--crystal);line-height:1.6;margin:0 0 14px;">コピー元：<span id="cloneSourceLabel">未設定</span></p>
-  <div class="row"><label>太さ</label><input type="range" id="cloneSizeSlider" min="0" max="1000" step="1" value="500"><input type="number" class="valNum" id="cloneSizeVal" value="50"></div>
-  <div class="previewWrap">
-    <div id="cloneSizePreview" style="border-radius:50%;background:rgba(127,224,255,.35);border:2px solid var(--crystal);"></div>
-  </div>
-  <div class="row"><label>強さ</label><input type="range" id="cloneStrengthSlider" min="1" max="100" value="100"><span class="val" id="cloneStrengthVal">100</span></div>
-  <div class="row"><label>ふちのやわらかさ</label><input type="range" id="cloneSoftnessSlider" min="0" max="100" value="45"><span class="val" id="cloneSoftnessVal">45</span></div>
-  <p style="font-size:11.5px;color:var(--crystal);line-height:1.6;margin:0;">🎯 今の対象：<span id="cloneTargetLabel">-</span>（レイヤー一覧で切り替えられます）</p>
-</div>
-
 <!-- Eyelash assist (なぞって生成) settings sheet -->
 <div class="sheet" id="lashSheet">
   <div class="sheetHandle"></div>
-  <div class="sheetTitle">💫 まつ毛アシスト設定</div>
+  <div class="sheetTitle">💫 まつ毛アシスト設定<button id="lashCloseBtn" style="margin-left:auto;background:none;border:none;color:var(--text-dim);font-size:18px;line-height:1;padding:4px 6px;">✕</button></div>
   <p style="font-size:11.5px;color:var(--text-dim);line-height:1.7;margin:0 0 6px;">まぶたのキワを軽くなぞると、その形に沿って自然なまつ毛を自動で描き足すよ。指を離した瞬間に生成されるので、気に入らなければ<b style="color:var(--gold);">元に戻す</b>ですぐやり直せます。</p>
   <p style="font-size:11px;color:var(--crystal);line-height:1.7;margin:0 0 12px;">💡 なぞる向きでまつ毛の流れが変わるよ。目頭→目尻になぞると外側にキュッと流れ、逆向きだと内側に流れる印象になるよ。</p>
 
@@ -568,11 +611,12 @@
     <div class="lashSideBtn" data-lashside="lower"><span class="bicon">⬇️</span>下まつげ</div>
   </div>
 
-  <div class="row"><label>密度</label><input type="range" id="lashDensitySlider" min="10" max="160" value="60"><input type="number" class="valNum" id="lashDensityVal" value="60"></div>
-  <div class="row"><label>束感</label><input type="range" id="lashClumpSlider" min="0" max="160" value="0"><input type="number" class="valNum" id="lashClumpVal" value="0"></div>
+  <div class="row"><label>密度</label><input type="range" id="lashDensitySlider" min="10" max="300" value="60"><input type="number" class="valNum" id="lashDensityVal" value="60"></div>
+  <div class="row"><label>束感</label><input type="range" id="lashClumpSlider" min="0" max="250" value="0"><input type="number" class="valNum" id="lashClumpVal" value="0"></div>
   <div class="brushTypeGrid">
     <div class="lashSideBtn sel" data-lashclumpstyle="spread"><span class="bicon">🍃</span>根元ばらけ</div>
     <div class="lashSideBtn" data-lashclumpstyle="joined"><span class="bicon">🪭</span>根元そろえ</div>
+    <div class="lashSideBtn" data-lashclumpstyle="tipjoin"><span class="bicon">💎</span>毛先くっつく</div>
   </div>
   <p style="font-size:11px;color:var(--text-dim);line-height:1.6;margin:-8px 0 14px;">束感を上げると、まつ毛が1本ずつ均等に並ぶ代わりに数本ずつのまとまり（房）になって、房と房の間にすき間ができるよ（0でいつも通りの均等な並び）。「根元ばらけ」は房の中の根元も少しバラけたナチュラルなまとまり方、「根元そろえ」は房の根元をぴったり1点に揃えて、そこから2本＋短めの1本が扇状に開く、手描き風のV字まつ毛になるよ。</p>
   <div class="row"><label>長さ</label><input type="range" id="lashLengthSlider" min="0" max="1000" step="1" value="500"><input type="number" class="valNum" id="lashLengthVal" value="32"></div>
@@ -584,6 +628,8 @@
     <div class="lashSideBtn" data-lashshape="even"><span class="bicon">➖</span>均一</div>
   </div>
   <p style="font-size:11px;color:var(--text-dim);line-height:1.6;margin:-8px 0 14px;">まつ毛の長さがまぶたのどこで一番長くなるかを選べるよ。「目じり長め」は目頭→目尻の順になぞると外側（目尻側）がきゅっと長くなる、たれ目っぽい形。「目頭長め」はその逆。なぞる向きを逆にすると、長くなる場所も逆になるので注意してね。</p>
+  <div class="row"><label>形の強さ</label><input type="range" id="lashShapeIntensitySlider" min="0" max="200" value="100"><input type="number" class="valNum" id="lashShapeIntensityVal" value="100"></div>
+  <p style="font-size:11px;color:var(--text-dim);line-height:1.6;margin:-8px 0 14px;">上で選んだ形の効き具合を調整できるよ。0で完全に均一（形の選択が無効になる）、100が通常の効き方、100より上げるとその形をさらに強調できる（例：「目じり長め」をもっと極端に）。</p>
   <div class="row"><label>カール</label><input type="range" id="lashCurlSlider" min="0" max="100" value="45"><input type="number" class="valNum" id="lashCurlVal" value="45"></div>
 
   <div class="brushTypeGrid">
@@ -676,65 +722,112 @@
   <div class="sheetHandle"></div>
   <div class="sheetTitle">🎚️ 画像調整<button id="adjustCloseBtn" style="margin-left:auto;background:none;border:none;color:var(--text-dim);font-size:18px;line-height:1;padding:4px 6px;">✕</button></div>
 
-  <div style="font-size:12.5px;font-weight:700;color:var(--gold);margin:0 0 6px;">📊 レベル補正</div>
-  <div class="row"><label>黒レベル</label><input type="range" id="levelBlackSlider" min="0" max="254" value="0"><span class="val" id="levelBlackVal">0</span></div>
-  <div class="row"><label>白レベル</label><input type="range" id="levelWhiteSlider" min="1" max="255" value="255"><span class="val" id="levelWhiteVal">255</span></div>
-  <div class="row"><label>ガンマ（中間）</label><input type="range" id="levelGammaSlider" min="30" max="300" value="100"><span class="val" id="levelGammaVal">1.00</span></div>
-  <div class="row"><label>ふんわり（影を持ち上げ＋鮮やかさ）</label><input type="range" id="levelFadeSlider" min="0" max="120" value="0"><span class="val" id="levelFadeVal">0</span></div>
-  <p style="font-size:10.5px;color:var(--text-dim);line-height:1.5;margin:-8px 0 12px;">黒だけをグレーに持ち上げつつ、色も少し鮮やかにします。離すと適用され基準値に戻ります。</p>
-
-  <div class="row"><label>明るさ</label><input type="range" id="brSlider" min="-100" max="100" value="0"><span class="val" id="brVal">0</span></div>
-  <div class="row"><label>コントラスト</label><input type="range" id="ctSlider" min="-100" max="100" value="0"><span class="val" id="ctVal">0</span></div>
-
-  <div style="font-size:12.5px;font-weight:700;color:var(--gold);margin:10px 0 6px;">💡 ライト</div>
-  <div class="row"><label>ハイライト</label><input type="range" id="hlSlider" min="-100" max="100" value="0"><span class="val" id="hlVal">0</span></div>
-  <div class="row"><label>シャドウ</label><input type="range" id="shSlider" min="-100" max="100" value="0"><span class="val" id="shVal">0</span></div>
-  <div class="row"><label>ホワイト</label><input type="range" id="whSlider" min="-100" max="100" value="0"><span class="val" id="whVal">0</span></div>
-  <div class="row"><label>ブラック</label><input type="range" id="blSlider" min="-100" max="100" value="0"><span class="val" id="blVal">0</span></div>
-
-  <div style="font-size:12.5px;font-weight:700;color:var(--gold);margin:10px 0 6px;">💧 ホワイトバランス</div>
-  <div class="row"><label>色温度</label><input type="range" id="wmSlider" min="-60" max="60" value="0"><span class="val" id="wmVal">0</span></div>
-  <div class="row"><label>色合い</label><input type="range" id="tintSlider" min="-60" max="60" value="0"><span class="val" id="tintVal">0</span></div>
-
-  <div style="font-size:12.5px;font-weight:700;color:var(--gold);margin:10px 0 6px;">🎨 カラー調整</div>
-  <div class="togRow"><label>反転</label><button class="toggle" id="invertTog"></button></div>
-  <div class="row"><label>自然な彩度</label><input type="range" id="vibranceSlider" min="-100" max="100" value="0"><span class="val" id="vibranceVal">0</span></div>
-  <div class="row"><label>彩度</label><input type="range" id="stSlider" min="-100" max="200" value="0"><span class="val" id="stVal">0</span></div>
-
-  <div class="row"><label>セピア</label><input type="range" id="spSlider" min="0" max="100" value="0"><span class="val" id="spVal">0</span></div>
-  <div class="row"><label>ビネット</label><input type="range" id="vgSlider" min="0" max="100" value="0"><span class="val" id="vgVal">0</span></div>
-
-  <div style="font-size:12.5px;font-weight:700;color:var(--gold);margin:10px 0 6px;">〰️ テクスチャー</div>
-  <div class="row"><label>明瞭度</label><input type="range" id="claritySlider" min="0" max="100" value="0"><span class="val" id="clarityVal">0</span></div>
-
-  <div style="font-size:12.5px;font-weight:700;color:var(--gold);margin:10px 0 6px;">🎨 色かぶり除去</div>
-  <div class="presetRow" id="castModeRow" style="flex-wrap:wrap;overflow:visible;">
-    <div class="presetChip sel" data-cast="yellow">黄み</div>
-    <div class="presetChip" data-cast="red">赤み</div>
-    <div class="presetChip" data-cast="green">緑み</div>
-    <div class="presetChip" data-cast="blue">青み</div>
-  </div>
-  <div class="row"><label>除去の強さ</label><input type="range" id="deyellowSlider" min="0" max="100" value="0"><span class="val" id="deyellowVal">0</span></div>
-
-  <div class="row"><label>シャープ</label><input type="range" id="sharpenSlider" min="0" max="100" value="0"><span class="val" id="sharpenVal">0</span></div>
-  <div class="row"><label>ジャギー除去</label><input type="range" id="antiJaggySlider" min="0" max="100" value="0"><span class="val" id="antiJaggyVal">0</span></div>
-  <p style="font-size:10.5px;color:var(--text-dim);line-height:1.5;margin:-8px 0 12px;">上記の一発系スライダーは、離すと適用されて0（基準値）に戻ります。</p>
-
-  <div style="border-top:1px solid var(--line); margin:2px 0 12px; padding-top:14px;">
-    <div style="font-size:12.5px;font-weight:700;color:var(--gold);margin-bottom:6px;">🔍 解像度アップ<span style="color:var(--danger);font-weight:400;font-size:10.5px;">（元に戻せません）</span></div>
-    <div class="previewLabel" id="upscaleCurrentLabel" style="margin-bottom:8px;">現在：-</div>
-    <div class="presetRow" id="upscaleScaleRow" style="flex-wrap:wrap;overflow:visible;">
-      <div class="presetChip" data-scale="1.5">1.5倍</div>
-      <div class="presetChip sel" data-scale="2">2倍</div>
-      <div class="presetChip" data-scale="3">3倍</div>
+  <details class="adjustSection">
+    <summary>📊 レベル補正</summary>
+    <div class="adjustBody">
+      <div class="row"><label>黒レベル</label><input type="range" id="levelBlackSlider" min="0" max="254" value="0"><span class="val" id="levelBlackVal">0</span></div>
+      <div class="row"><label>白レベル</label><input type="range" id="levelWhiteSlider" min="1" max="255" value="255"><span class="val" id="levelWhiteVal">255</span></div>
+      <div class="row"><label>ガンマ（中間）</label><input type="range" id="levelGammaSlider" min="30" max="300" value="100"><span class="val" id="levelGammaVal">1.00</span></div>
+      <div class="row"><label>ふんわり（影を持ち上げ＋鮮やかさ）</label><input type="range" id="levelFadeSlider" min="0" max="120" value="0"><span class="val" id="levelFadeVal">0</span></div>
+      <p style="font-size:10.5px;color:var(--text-dim);line-height:1.5;margin:-8px 0 0;">離すと適用され基準値に戻ります。</p>
     </div>
-    <button id="doUpscaleBtn" style="width:100%;padding:10px;border-radius:14px;border:1.5px solid var(--gold);background:rgba(243,205,142,.08);color:var(--gold);font-weight:700;font-size:12.5px;font-family:'M PLUS Rounded 1c';">この倍率で解像度を上げる</button>
-  </div>
+  </details>
 
-  <div style="border-top:1px solid var(--line); margin:2px 0 12px; padding-top:14px;">
-    <div style="font-size:12.5px;font-weight:700;color:var(--gold);margin-bottom:6px;">✂️ トリミング<span style="color:var(--danger);font-weight:400;font-size:10.5px;">（元に戻せません）</span></div>
-    <button id="startCropBtn" style="width:100%;padding:10px;border-radius:14px;border:1.5px solid var(--gold);background:rgba(243,205,142,.08);color:var(--gold);font-weight:700;font-size:12.5px;font-family:'M PLUS Rounded 1c';">範囲を選んでトリミング</button>
-  </div>
+  <details class="adjustSection" open>
+    <summary>明るさ・コントラスト</summary>
+    <div class="adjustBody">
+      <div class="row"><label>明るさ</label><input type="range" id="brSlider" min="-100" max="100" value="0"><span class="val" id="brVal">0</span></div>
+      <div class="row"><label>コントラスト</label><input type="range" id="ctSlider" min="-100" max="100" value="0"><span class="val" id="ctVal">0</span></div>
+    </div>
+  </details>
+
+  <details class="adjustSection">
+    <summary>💡 ライト</summary>
+    <div class="adjustBody">
+      <div class="row"><label>ハイライト</label><input type="range" id="hlSlider" min="-100" max="100" value="0"><span class="val" id="hlVal">0</span></div>
+      <div class="row"><label>シャドウ</label><input type="range" id="shSlider" min="-100" max="100" value="0"><span class="val" id="shVal">0</span></div>
+      <div class="row"><label>ホワイト</label><input type="range" id="whSlider" min="-100" max="100" value="0"><span class="val" id="whVal">0</span></div>
+      <div class="row"><label>ブラック</label><input type="range" id="blSlider" min="-100" max="100" value="0"><span class="val" id="blVal">0</span></div>
+    </div>
+  </details>
+
+  <details class="adjustSection">
+    <summary>💧 ホワイトバランス</summary>
+    <div class="adjustBody">
+      <div class="row"><label>色温度</label><input type="range" id="wmSlider" min="-60" max="60" value="0"><span class="val" id="wmVal">0</span></div>
+      <div class="row"><label>色合い</label><input type="range" id="tintSlider" min="-60" max="60" value="0"><span class="val" id="tintVal">0</span></div>
+    </div>
+  </details>
+
+  <details class="adjustSection">
+    <summary>🎨 カラー調整</summary>
+    <div class="adjustBody">
+      <div class="togRow"><label>反転</label><button class="toggle" id="invertTog"></button></div>
+      <div class="row"><label>色相</label><input type="range" id="adjHueSlider" min="-180" max="180" value="0"><span class="val" id="adjHueVal">0</span></div>
+      <div class="row"><label>自然な彩度</label><input type="range" id="vibranceSlider" min="-100" max="100" value="0"><span class="val" id="vibranceVal">0</span></div>
+      <div class="row"><label>彩度</label><input type="range" id="stSlider" min="-100" max="200" value="0"><span class="val" id="stVal">0</span></div>
+      <div class="row"><label>ハイライトの色味</label><input type="range" id="splitHighlightSlider" min="-180" max="180" value="0"><span class="val" id="splitHighlightVal">0</span></div>
+      <div class="row"><label>シャドウの色味</label><input type="range" id="splitShadowSlider" min="-180" max="180" value="0"><span class="val" id="splitShadowVal">0</span></div>
+      <p style="font-size:10.5px;color:var(--text-dim);line-height:1.5;margin:-8px 0 0;">「色相」は色みそのものを丸ごと回転、「ハイライト／シャドウの色味」は明るい部分・暗い部分だけに別々の色みをのせます（映画っぽい色分けの元）。離すと適用され0に戻ります。</p>
+    </div>
+  </details>
+
+  <details class="adjustSection">
+    <summary>セピア・ビネット</summary>
+    <div class="adjustBody">
+      <div class="row"><label>セピア</label><input type="range" id="spSlider" min="0" max="100" value="0"><span class="val" id="spVal">0</span></div>
+      <div class="row"><label>ビネット</label><input type="range" id="vgSlider" min="0" max="100" value="0"><span class="val" id="vgVal">0</span></div>
+    </div>
+  </details>
+
+  <details class="adjustSection">
+    <summary>〰️ テクスチャー</summary>
+    <div class="adjustBody">
+      <div class="row"><label>明瞭度</label><input type="range" id="claritySlider" min="0" max="100" value="0"><span class="val" id="clarityVal">0</span></div>
+    </div>
+  </details>
+
+  <details class="adjustSection">
+    <summary>🎨 色かぶり除去</summary>
+    <div class="adjustBody">
+      <div class="presetRow" id="castModeRow" style="flex-wrap:wrap;overflow:visible;">
+        <div class="presetChip sel" data-cast="yellow">黄み</div>
+        <div class="presetChip" data-cast="red">赤み</div>
+        <div class="presetChip" data-cast="green">緑み</div>
+        <div class="presetChip" data-cast="blue">青み</div>
+      </div>
+      <div class="row"><label>除去の強さ</label><input type="range" id="deyellowSlider" min="0" max="100" value="0"><span class="val" id="deyellowVal">0</span></div>
+    </div>
+  </details>
+
+  <details class="adjustSection">
+    <summary>シャープ・ジャギー除去</summary>
+    <div class="adjustBody">
+      <div class="row"><label>シャープ</label><input type="range" id="sharpenSlider" min="0" max="100" value="0"><span class="val" id="sharpenVal">0</span></div>
+      <div class="row"><label>ジャギー除去</label><input type="range" id="antiJaggySlider" min="0" max="100" value="0"><span class="val" id="antiJaggyVal">0</span></div>
+      <p style="font-size:10.5px;color:var(--text-dim);line-height:1.5;margin:-8px 0 0;">離すと適用され0に戻ります。</p>
+    </div>
+  </details>
+
+  <details class="adjustSection">
+    <summary>🔍 解像度アップ<span style="color:var(--danger);font-weight:400;font-size:10.5px;margin-left:6px;">（元に戻せません）</span></summary>
+    <div class="adjustBody">
+      <div class="previewLabel" id="upscaleCurrentLabel" style="margin-bottom:8px;">現在：-</div>
+      <div class="presetRow" id="upscaleScaleRow" style="flex-wrap:wrap;overflow:visible;">
+        <div class="presetChip" data-scale="1.5">1.5倍</div>
+        <div class="presetChip sel" data-scale="2">2倍</div>
+        <div class="presetChip" data-scale="3">3倍</div>
+      </div>
+      <button id="doUpscaleBtn" style="width:100%;padding:10px;border-radius:14px;border:1.5px solid var(--gold);background:rgba(243,205,142,.08);color:var(--gold);font-weight:700;font-size:12.5px;font-family:'M PLUS Rounded 1c';">この倍率で解像度を上げる</button>
+    </div>
+  </details>
+
+  <details class="adjustSection">
+    <summary>✂️ トリミング<span style="color:var(--danger);font-weight:400;font-size:10.5px;margin-left:6px;">（元に戻せません）</span></summary>
+    <div class="adjustBody">
+      <button id="startCropBtn" style="width:100%;padding:10px;border-radius:14px;border:1.5px solid var(--gold);background:rgba(243,205,142,.08);color:var(--gold);font-weight:700;font-size:12.5px;font-family:'M PLUS Rounded 1c';">範囲を選んでトリミング</button>
+    </div>
+  </details>
 
   <div class="transformRow">
     <button class="xbtn" id="rotateBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>回転</button>
@@ -929,7 +1022,7 @@
       <tr><th>ぼかし</th><td>なぞった場所をふんわりぼかす</td></tr>
       <tr><th>なぞる</th><td>指で色を引きずって伸ばす（指先ツール）</td></tr>
       <tr><th>なじませ</th><td>髪の毛の輪郭など、ギザギザした境目だけをなめらかにする（ぼかしと違い平らな場所はあまり変わらない）</td></tr>
-      <tr><th>スタンプ</th><td>近くの綺麗な場所をコピーして、透かし文字や小物などを自然に消す（①コピー元を指定→②消したい場所をなぞる）</td></tr>
+      <tr><th>部分シャープ</th><td>なぞった場所だけをくっきりさせる（画像調整のシャープは写真全体にかかる）</td></tr>
       <tr><th>消しゴム</th><td>描いたものを消す。専用の太さ・不透明度あり</td></tr>
       <tr><th>まつ毛</th><td>まぶたをなぞるだけで自然なまつ毛を自動生成</td></tr>
       <tr><th>ブラシ設定</th><td>今選んでいるツールの詳細設定を開く（自動で切り替わる）</td></tr>
@@ -965,7 +1058,7 @@
     <table>
       <tr><th>密度</th><td>本数の細かさ</td></tr>
       <tr><th>束感</th><td>0で均等。上げると数本ずつの房になり隙間ができる</td></tr>
-      <tr><th>根元ばらけ／根元そろえ</th><td>房の根元の形。「根元そろえ」は根元を1点に揃えたV字パターン</td></tr>
+      <tr><th>根元ばらけ／根元そろえ／毛先くっつく</th><td>房の形。「根元そろえ」は根元を1点に揃えたV字、「毛先くっつく」は根元は離れたまま毛先だけ1点に集まる今どきの束感アレンジ</td></tr>
       <tr><th>長さ・カール</th><td>まつ毛の長さと反り具合</td></tr>
       <tr><th>Cカール／Jカール／毛先ばらけ</th><td>カーブの形の違い</td></tr>
       <tr><th>太さ・ばらつき・不透明度・ふちのやわらかさ</th><td>見た目の質感調整</td></tr>
@@ -1023,6 +1116,14 @@
   </details>
 
   <p style="font-size:10.5px;color:var(--text-dim);text-align:center;margin:14px 0 0;">画像は外部サーバーに送信されません。すべてブラウザ内で完結しています。</p>
+</div>
+
+<!-- CSP風のサイズプリセット選択ポップアップ -->
+<div class="sizePickerBackdrop" id="sizePickerBackdrop">
+  <div class="sizePickerModal">
+    <div class="sizePickerTitle">太さを選ぶ</div>
+    <div class="sizePickerGrid" id="sizePickerGrid"></div>
+  </div>
 </div>
 
 <script>
@@ -1085,6 +1186,8 @@
     eraserOpacity:100,
     glitterSize:3,
     glitterDensity:55,
+    customBrushImage:null,
+    textureScale:100,
     blurSize:90,
     blurStrength:20,
     smudgeSize:70,
@@ -1094,9 +1197,8 @@
     eyeBulgeMode:'bigger',
     eyeBulgeRadius:70,
     eyeBulgeStrength:40,
-    cloneSize:50,
-    cloneStrength:100,
-    cloneSoftness:45,
+    sharpenBrushSize:40,
+    sharpenBrushStrength:55,
     lashDensity:60,
     lashClump:0,
     lashClumpStyle:'spread',
@@ -1104,6 +1206,7 @@
     lashCurl:45,
     lashCurlStyle:'c',
     lashShape:'natural',
+    lashShapeIntensity:100,
     lashSoftness:0,
     lashThickness:2.6,
     lashRandom:35,
@@ -1116,49 +1219,49 @@
     activeLayerId:null,
   };
 
-  const adjust = { brightness:0, contrast:0, saturate:0, warmth:0, tint:0, sepia:0, vignette:0, invert:0 };
+  const adjust = { brightness:0, contrast:0, saturate:0, warmth:0, tint:0, sepia:0, vignette:0, invert:0, hue:0 };
   const PRESETS = {
-    normal:{brightness:0,contrast:0,saturate:0,warmth:0,tint:0,sepia:0,vignette:0,invert:0},
-    vivid:{brightness:6,contrast:18,saturate:45,warmth:0,tint:0,sepia:0,vignette:0,invert:0},
-    sepia:{brightness:4,contrast:2,saturate:-30,warmth:8,tint:0,sepia:55,vignette:12,invert:0},
-    mono:{brightness:2,contrast:12,saturate:-100,warmth:0,tint:0,sepia:0,vignette:10,invert:0},
+    normal:{brightness:0,contrast:0,saturate:0,warmth:0,tint:0,sepia:0,vignette:0,invert:0,hue:0},
+    vivid:{brightness:6,contrast:18,saturate:45,warmth:0,tint:0,sepia:0,vignette:0,invert:0,hue:0},
+    sepia:{brightness:4,contrast:2,saturate:-30,warmth:8,tint:0,sepia:55,vignette:12,invert:0,hue:0},
+    mono:{brightness:2,contrast:12,saturate:-100,warmth:0,tint:0,sepia:0,vignette:10,invert:0,hue:0},
     // Natural
-    fresco:{brightness:10,contrast:-6,saturate:-10,warmth:10,tint:-8,sepia:10,vignette:6,invert:0},
-    belvedere:{brightness:4,contrast:14,saturate:20,warmth:-10,tint:4,sepia:0,vignette:14,invert:0},
-    flint:{brightness:-4,contrast:24,saturate:-40,warmth:-6,tint:0,sepia:0,vignette:18,invert:0},
-    luna:{brightness:8,contrast:-4,saturate:-25,warmth:-14,tint:8,sepia:0,vignette:10,invert:0},
-    aero:{brightness:12,contrast:-8,saturate:10,warmth:2,tint:-6,sepia:0,vignette:0,invert:0},
-    mist:{brightness:16,contrast:-18,saturate:-20,warmth:4,tint:0,sepia:4,vignette:4,invert:0},
+    fresco:{brightness:10,contrast:-6,saturate:-10,warmth:10,tint:-8,sepia:10,vignette:6,invert:0,hue:0},
+    belvedere:{brightness:4,contrast:14,saturate:20,warmth:-10,tint:4,sepia:0,vignette:14,invert:0,hue:0},
+    flint:{brightness:-4,contrast:24,saturate:-40,warmth:-6,tint:0,sepia:0,vignette:18,invert:0,hue:0},
+    luna:{brightness:8,contrast:-4,saturate:-25,warmth:-14,tint:8,sepia:0,vignette:10,invert:0,hue:0},
+    aero:{brightness:12,contrast:-8,saturate:10,warmth:2,tint:-6,sepia:0,vignette:0,invert:0,hue:0},
+    mist:{brightness:16,contrast:-18,saturate:-20,warmth:4,tint:0,sepia:4,vignette:4,invert:0,hue:0},
     // Soft
-    soft:{brightness:14,contrast:-12,saturate:-15,warmth:6,tint:0,sepia:8,vignette:0,invert:0},
-    aura:{brightness:16,contrast:-14,saturate:-10,warmth:-6,tint:6,sepia:0,vignette:0,invert:0},
-    hazel:{brightness:8,contrast:-6,saturate:-5,warmth:10,tint:-4,sepia:12,vignette:0,invert:0},
-    whim:{brightness:12,contrast:-10,saturate:-8,warmth:-4,tint:14,sepia:0,vignette:0,invert:0},
-    rose:{brightness:10,contrast:-8,saturate:-4,warmth:2,tint:16,sepia:0,vignette:0,invert:0},
-    ocean:{brightness:6,contrast:-4,saturate:-6,warmth:-22,tint:-4,sepia:0,vignette:0,invert:0},
-    raincloud:{brightness:2,contrast:-16,saturate:-30,warmth:-10,tint:0,sepia:0,vignette:10,invert:0},
+    soft:{brightness:14,contrast:-12,saturate:-15,warmth:6,tint:0,sepia:8,vignette:0,invert:0,hue:0},
+    aura:{brightness:16,contrast:-14,saturate:-10,warmth:-6,tint:6,sepia:0,vignette:0,invert:0,hue:0},
+    hazel:{brightness:8,contrast:-6,saturate:-5,warmth:10,tint:-4,sepia:12,vignette:0,invert:0,hue:0},
+    whim:{brightness:12,contrast:-10,saturate:-8,warmth:-4,tint:14,sepia:0,vignette:0,invert:0,hue:0},
+    rose:{brightness:10,contrast:-8,saturate:-4,warmth:2,tint:16,sepia:0,vignette:0,invert:0,hue:0},
+    ocean:{brightness:6,contrast:-4,saturate:-6,warmth:-22,tint:-4,sepia:0,vignette:0,invert:0,hue:0},
+    raincloud:{brightness:2,contrast:-16,saturate:-30,warmth:-10,tint:0,sepia:0,vignette:10,invert:0,hue:0},
     // Vintage
-    retro:{brightness:6,contrast:-8,saturate:-20,warmth:14,tint:0,sepia:22,vignette:26,invert:0},
-    vintage:{brightness:4,contrast:-10,saturate:-25,warmth:16,tint:0,sepia:26,vignette:22,invert:0},
-    fadeF:{brightness:10,contrast:-22,saturate:-20,warmth:6,tint:0,sepia:12,vignette:8,invert:0},
-    antique:{brightness:0,contrast:-6,saturate:-30,warmth:20,tint:0,sepia:34,vignette:26,invert:0},
-    nostalgia:{brightness:6,contrast:-12,saturate:-22,warmth:12,tint:4,sepia:20,vignette:16,invert:0},
-    dreamF:{brightness:14,contrast:-16,saturate:-15,warmth:4,tint:8,sepia:6,vignette:0,invert:0},
+    retro:{brightness:6,contrast:-8,saturate:-20,warmth:14,tint:0,sepia:22,vignette:26,invert:0,hue:0},
+    vintage:{brightness:4,contrast:-10,saturate:-25,warmth:16,tint:0,sepia:26,vignette:22,invert:0,hue:0},
+    fadeF:{brightness:10,contrast:-22,saturate:-20,warmth:6,tint:0,sepia:12,vignette:8,invert:0,hue:0},
+    antique:{brightness:0,contrast:-6,saturate:-30,warmth:20,tint:0,sepia:34,vignette:26,invert:0,hue:0},
+    nostalgia:{brightness:6,contrast:-12,saturate:-22,warmth:12,tint:4,sepia:20,vignette:16,invert:0,hue:0},
+    dreamF:{brightness:14,contrast:-16,saturate:-15,warmth:4,tint:8,sepia:6,vignette:0,invert:0,hue:0},
     // Warm
-    bali:{brightness:8,contrast:4,saturate:12,warmth:18,tint:0,sepia:6,vignette:0,invert:0},
-    capri:{brightness:10,contrast:2,saturate:6,warmth:12,tint:10,sepia:0,vignette:0,invert:0},
-    latte:{brightness:6,contrast:-4,saturate:-10,warmth:22,tint:0,sepia:18,vignette:0,invert:0},
-    bronze:{brightness:0,contrast:8,saturate:10,warmth:26,tint:0,sepia:14,vignette:10,invert:0},
-    sandy:{brightness:8,contrast:-4,saturate:-8,warmth:20,tint:0,sepia:16,vignette:0,invert:0},
-    sangria:{brightness:4,contrast:10,saturate:20,warmth:8,tint:18,sepia:0,vignette:6,invert:0},
+    bali:{brightness:8,contrast:4,saturate:12,warmth:18,tint:0,sepia:6,vignette:0,invert:0,hue:0},
+    capri:{brightness:10,contrast:2,saturate:6,warmth:12,tint:10,sepia:0,vignette:0,invert:0,hue:0},
+    latte:{brightness:6,contrast:-4,saturate:-10,warmth:22,tint:0,sepia:18,vignette:0,invert:0,hue:0},
+    bronze:{brightness:0,contrast:8,saturate:10,warmth:26,tint:0,sepia:14,vignette:10,invert:0,hue:0},
+    sandy:{brightness:8,contrast:-4,saturate:-8,warmth:20,tint:0,sepia:16,vignette:0,invert:0,hue:0},
+    sangria:{brightness:4,contrast:10,saturate:20,warmth:8,tint:18,sepia:0,vignette:6,invert:0,hue:0},
     // Cool
-    cool:{brightness:2,contrast:6,saturate:-8,warmth:-18,tint:0,sepia:0,vignette:8,invert:0},
-    scandi:{brightness:6,contrast:6,saturate:-6,warmth:-16,tint:0,sepia:0,vignette:0,invert:0},
-    nordic:{brightness:4,contrast:2,saturate:-12,warmth:-22,tint:2,sepia:0,vignette:0,invert:0},
-    astro:{brightness:2,contrast:8,saturate:0,warmth:-14,tint:14,sepia:0,vignette:8,invert:0},
-    arctic:{brightness:10,contrast:0,saturate:-18,warmth:-30,tint:0,sepia:0,vignette:0,invert:0},
-    polar:{brightness:14,contrast:-6,saturate:-24,warmth:-20,tint:2,sepia:0,vignette:0,invert:0},
-    tundra:{brightness:4,contrast:0,saturate:-30,warmth:-8,tint:-6,sepia:0,vignette:4,invert:0},
+    cool:{brightness:2,contrast:6,saturate:-8,warmth:-18,tint:0,sepia:0,vignette:8,invert:0,hue:0},
+    scandi:{brightness:6,contrast:6,saturate:-6,warmth:-16,tint:0,sepia:0,vignette:0,invert:0,hue:0},
+    nordic:{brightness:4,contrast:2,saturate:-12,warmth:-22,tint:2,sepia:0,vignette:0,invert:0,hue:0},
+    astro:{brightness:2,contrast:8,saturate:0,warmth:-14,tint:14,sepia:0,vignette:8,invert:0,hue:0},
+    arctic:{brightness:10,contrast:0,saturate:-18,warmth:-30,tint:0,sepia:0,vignette:0,invert:0,hue:0},
+    polar:{brightness:14,contrast:-6,saturate:-24,warmth:-20,tint:2,sepia:0,vignette:0,invert:0,hue:0},
+    tundra:{brightness:4,contrast:0,saturate:-30,warmth:-8,tint:-6,sepia:0,vignette:4,invert:0,hue:0},
   };
 
   // Sensible starting point per brush character — applied whenever the
@@ -1169,6 +1272,7 @@
     soft:     { softness: 78, opacity: 55,  taperEnabled: false }, // エアブラシ: soft edge, translucent
     marker:   { softness: 18, opacity: 100, taperEnabled: false }, // 厚塗り: slightly soft, fully opaque
     glitter:  { softness: 30, opacity: 100, taperEnabled: false }, // グリッター
+    texture:  { softness: 0,  opacity: 100, taperEnabled: false }, // カスタム質感
   };
   const PALETTE = ['#1a1512','#2b2118','#4a2e22','#6b3f2a','#8a5a3c','#c98b63',
                    '#f2d3b8','#ffe9d6','#ffffff','#ff6b8a','#ffb3c7','#ff2d55',
@@ -2126,7 +2230,7 @@
     const s = 1 + adjust.saturate/100;
     const tintFilter = adjust.tint!==0 ? ' url(#tintFilter)' : '';
     const inv = adjust.invert ? ' invert(1)' : '';
-    return `brightness(${b}) contrast(${c}) saturate(${Math.max(0,s)}) hue-rotate(${adjust.warmth}deg) sepia(${adjust.sepia/100})${tintFilter}${inv}`;
+    return `brightness(${b}) contrast(${c}) saturate(${Math.max(0,s)}) hue-rotate(${adjust.warmth+adjust.hue}deg) sepia(${adjust.sepia/100})${tintFilter}${inv}`;
   }
   // 色合い's feColorMatrix: shifts green up/down while pulling red+blue the
   // opposite way (green vs magenta), the same axis a real white-balance
@@ -2165,7 +2269,7 @@
   // whenever every value is at its default guarantees a byte-for-byte identical,
   // un-filtered image until the person actually changes something.
   function isAdjustNeutral(){
-    return adjust.brightness===0 && adjust.contrast===0 && adjust.saturate===0 && adjust.warmth===0 && adjust.tint===0 && adjust.sepia===0 && !adjust.invert;
+    return adjust.brightness===0 && adjust.contrast===0 && adjust.saturate===0 && adjust.warmth===0 && adjust.tint===0 && adjust.sepia===0 && adjust.hue===0 && !adjust.invert;
   }
   // Renders photoCanvas's raw pixels into adjustCanvas — no filter baked in
   // here anymore (see applyAdjustments below for why). This still exists
@@ -2202,6 +2306,7 @@
     document.getElementById('stSlider').value = adjust.saturate; document.getElementById('stVal').textContent = adjust.saturate;
     document.getElementById('wmSlider').value = adjust.warmth; document.getElementById('wmVal').textContent = adjust.warmth;
     document.getElementById('tintSlider').value = adjust.tint; document.getElementById('tintVal').textContent = adjust.tint;
+    document.getElementById('adjHueSlider').value = adjust.hue; document.getElementById('adjHueVal').textContent = adjust.hue;
     document.getElementById('spSlider').value = adjust.sepia; document.getElementById('spVal').textContent = adjust.sepia;
     document.getElementById('vgSlider').value = adjust.vignette; document.getElementById('vgVal').textContent = adjust.vignette;
     document.getElementById('invertTog').classList.toggle('on', !!adjust.invert);
@@ -2219,6 +2324,7 @@
   bindAdjustSlider('stSlider','stVal','saturate');
   bindAdjustSlider('wmSlider','wmVal','warmth');
   bindAdjustSlider('tintSlider','tintVal','tint');
+  bindAdjustSlider('adjHueSlider','adjHueVal','hue');
   bindAdjustSlider('spSlider','spVal','sepia');
   bindAdjustSlider('vgSlider','vgVal','vignette');
   document.getElementById('invertTog').addEventListener('click', ()=>{
@@ -2522,6 +2628,42 @@
     photoCtx.putImageData(new ImageData(data, baseData.width, baseData.height), 0, 0);
     renderAdjustCanvas();
   }
+  // Turns a pure hue angle into a signed R/G/B tint direction (each channel
+  // roughly -1..1) — used by split toning below to color-shift highlights
+  // and shadows independently, the same idea as a movie color-grade split
+  // between warm highlights and cool shadows (or any other hue pairing).
+  function hueToRgbTint(hueDeg){
+    const h = ((hueDeg%360)+360)%360;
+    const c = 1, x = 1-Math.abs((h/60)%2-1);
+    let r,g,b;
+    if(h<60){r=c;g=x;b=0;} else if(h<120){r=x;g=c;b=0;} else if(h<180){r=0;g=c;b=x;}
+    else if(h<240){r=0;g=x;b=c;} else if(h<300){r=x;g=0;b=c;} else {r=c;g=0;b=x;}
+    return {r:(r-0.5)*2, g:(g-0.5)*2, b:(b-0.5)*2};
+  }
+  // Split toning (ハイライト／シャドウの色味): the slider's position doubles as
+  // both which hue to tint with (its angle around the color wheel) and how
+  // strongly (its distance from the 0 centre) — a simplified one-slider take
+  // on the two-part hue+intensity controls a full split-toning tool usually
+  // has, chosen to keep this consistent with the rest of 画像調整's single-
+  // slider one-shot controls.
+  function applySplitTone(baseData, amount, kind){
+    if(!photoCtx) return;
+    if(amount===0){ photoCtx.putImageData(baseData,0,0); return; }
+    const data = new Uint8ClampedArray(baseData.data);
+    const tint = hueToRgbTint(amount);
+    const strength = Math.min(1, Math.abs(amount)/180) * 60;
+    for(let i=0;i<data.length;i+=4){
+      const r=data[i], g=data[i+1], b=data[i+2];
+      const lum = (r+g+b)/765;
+      const weight = kind==='highlight' ? smoothstep(0.45,1,lum) : smoothstep(0.55,0,lum);
+      const kk = weight*strength;
+      data[i]   = r + tint.r*kk;
+      data[i+1] = g + tint.g*kk;
+      data[i+2] = b + tint.b*kk;
+    }
+    photoCtx.putImageData(new ImageData(data, baseData.width, baseData.height), 0, 0);
+    renderAdjustCanvas();
+  }
   function applyVibrance(baseData, amount){
     if(!photoCtx) return;
     if(amount===0){ photoCtx.putImageData(baseData,0,0); return; }
@@ -2583,11 +2725,23 @@
       val.textContent = slider.value;
       if(!before) return;
       if(raf) cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(()=> applyFn(before, +slider.value, ...extraArgs));
+      raf = requestAnimationFrame(()=>{
+        try {
+          applyFn(before, +slider.value, ...extraArgs);
+        } catch(err){
+          console.error(sliderId+' failed:', err);
+          showErrorToast(sliderId+' でエラー: ' + err.message);
+        }
+      });
     });
     slider.addEventListener('change', ()=>{
       if(before){
-        pushHistory({id:PHOTO_ID}, before);
+        try {
+          pushHistory({id:PHOTO_ID}, before);
+        } catch(err){
+          console.error(sliderId+' commit failed:', err);
+          showErrorToast(sliderId+' の確定でエラー: ' + err.message);
+        }
         before = null;
       }
       slider.value = 0; val.textContent = '0';
@@ -2600,6 +2754,8 @@
   wireOneShotSlider('blSlider','blVal', applyToneSlider, 'black');
   wireOneShotSlider('vibranceSlider','vibranceVal', applyVibrance);
   wireOneShotSlider('claritySlider','clarityVal', applyClarity);
+  wireOneShotSlider('splitHighlightSlider','splitHighlightVal', applySplitTone, 'highlight');
+  wireOneShotSlider('splitShadowSlider','splitShadowVal', applySplitTone, 'shadow');
 
   // ---------------- 目を大きく／小さく settings ----------------
   document.querySelectorAll('#eyeBulgeModeRow .presetChip').forEach(chip=>{
@@ -2621,29 +2777,6 @@
   document.getElementById('eyeBulgeRadiusSlider').addEventListener('input', updateEyeBulgePreview);
   updateEyeBulgePreview();
 
-  // ---------------- スタンプ (clone stamp) settings ----------------
-  bindPowerRange('cloneSizeSlider','cloneSizeVal','cloneSize', 4, 260, 2.4, 0);
-  bindRange('cloneStrengthSlider','cloneStrengthVal','cloneStrength','');
-  bindRange('cloneSoftnessSlider','cloneSoftnessVal','cloneSoftness','');
-  function updateClonePreview(){
-    const el = document.getElementById('cloneSizePreview');
-    if(!el) return;
-    const shown = Math.min(96, Math.max(6, state.cloneSize*0.4));
-    el.style.width = shown+'px';
-    el.style.height = shown+'px';
-  }
-  document.getElementById('cloneSizeSlider').addEventListener('input', updateClonePreview);
-  updateClonePreview();
-  document.getElementById('cloneSetSourceBtn').addEventListener('click', ()=>{
-    if(!state.imgW){ showToast('先に写真を読み込んでね'); return; }
-    cloneAwaitingSource = true;
-    state.tool = 'clone';
-    document.querySelectorAll('.tool[data-tool]').forEach(b=>b.classList.remove('active'));
-    const btn = document.querySelector('.tool[data-tool="clone"]');
-    if(btn) btn.classList.add('active');
-    closeSheets();
-    showToast('お手本にしたい場所を1回タップしてね');
-  });
 
   // BUGFIX: this used to select ALL `.presetChip` elements on the whole
   // page — which, once other chip rows (upscale scale, export format,
@@ -2692,7 +2825,7 @@
     document.querySelector('#filterSheet .presetChip[data-preset="normal"]').classList.add('sel');
     showToast('調整をリセットしました');
   });
-  document.getElementById('filterToolBtn').addEventListener('click', ()=>openSheet('filter'));
+  document.getElementById('filterToolBtn').addEventListener('click', ()=>openSheetToggle('filter'));
   document.getElementById('filterCloseBtn').addEventListener('click', closeSheets);
 
   function rotate90(){
@@ -2854,6 +2987,13 @@
     if(d[3]===0) return null;
     const hex = '#' + [d[0],d[1],d[2]].map(v=>v.toString(16).padStart(2,'0')).join('');
     setColor(hex);
+    // BUGFIX: every other way of changing the color (palette swatch, typing
+    // a hex/RGB value) already re-syncs the color picker's own UI (SV
+    // square handle, hue bar, hex/RGB fields) to match — the eyedropper was
+    // the one path that didn't, so state.color was updated correctly but
+    // the picker you'd see on opening 色 still showed whatever was there
+    // before, looking like the sampled color had been "forgotten".
+    syncPickerFromHex(hex);
     document.querySelectorAll('.swatch').forEach(s=>s.classList.remove('sel'));
     return hex;
   }
@@ -2917,43 +3057,6 @@
     bulgeStamp(layer.ctx, cx, cy, state.eyeBulgeRadius, state.eyeBulgeStrength/100, state.eyeBulgeMode);
   }
 
-  // ---------------- スタンプ (clone stamp) ----------------
-  // The professional answer to "remove this watermark/small object": rather
-  // than trying to invent new pixels (a full content-aware fill is a much
-  // heavier, less predictable algorithm), a clone stamp copies real texture
-  // from elsewhere in the same photo — nearby skin, background, hair — over
-  // the unwanted area. It's the same tool Photoshop/Lightroom retouchers
-  // reach for first for exactly this kind of cleanup.
-  // Samples a size×size region from `snapshot` at (px+offset.dx, py+offset.dy)
-  // and stamps it at (px,py) on the live layer, feathered by a radial-
-  // gradient alpha mask so the edge of the brush blends in rather than
-  // leaving a hard-edged patch.
-  function cloneStampAt(target, snapshot, px, py, size, offset, strength, softness){
-    const r = size/2;
-    const bw = Math.max(1, Math.ceil(size)), bh = bw;
-    const bx = Math.round(px-r), by = Math.round(py-r);
-    const sx = px+offset.dx-r, sy = py+offset.dy-r;
-    const tmp = document.createElement('canvas');
-    tmp.width = bw; tmp.height = bh;
-    const tctx = tmp.getContext('2d');
-    tctx.drawImage(snapshot, sx, sy, bw, bh, 0, 0, bw, bh);
-    tctx.globalCompositeOperation = 'destination-in';
-    const innerR = Math.max(0, r*(1-Math.max(0,Math.min(100,softness))/100));
-    const grad = tctx.createRadialGradient(bw/2,bh/2, innerR, bw/2,bh/2, r);
-    grad.addColorStop(0, 'rgba(0,0,0,1)');
-    grad.addColorStop(1, 'rgba(0,0,0,0)');
-    tctx.fillStyle = grad;
-    tctx.fillRect(0,0,bw,bh);
-    target.ctx.save();
-    target.ctx.globalAlpha = Math.max(0,Math.min(100,strength))/100;
-    target.ctx.drawImage(tmp, bx, by);
-    target.ctx.restore();
-  }
-  function updateCloneSourceLabel(){
-    const el = document.getElementById('cloneSourceLabel');
-    if(el) el.textContent = cloneSource ? '設定済み ✓' : '未設定';
-  }
-
   // ---------------- Pointer handling ----------------
   function redrawMovableLayer(layer){
     if(layer.type==='text') redrawTextLayer(layer); else redrawImageLayer(layer);
@@ -2964,20 +3067,20 @@
   let justPinched = false;
   let imgDrag = null, imgDragBefore = null; // active drag/scale of a collage image layer
   let eyeBulgeSession = null, eyeBulgeBeforeData = null; // active 目を大きく/小さく gesture
-  // Clone stamp (スタンプ): cloneSource is the sample point picked by the user;
-  // cloneOffset is the fixed sample→brush offset for the current "aligned"
-  // run (recomputed only when a new source is picked, same convention as
-  // Photoshop's Aligned clone stamp); cloneSnapshot is a frozen copy of the
-  // layer taken at stroke start so sampling never reads pixels this same
-  // stroke has already painted over.
-  let cloneSource = null, cloneOffset = null, cloneOffsetLocked = false, cloneAwaitingSource = false;
-  let cloneSession = null, cloneBeforeData = null, cloneSnapshot = null;
 
   function dist(a,b){ return Math.hypot(a.x-b.x, a.y-b.y); }
   function mid(a,b){ return {x:(a.x+b.x)/2, y:(a.y+b.y)/2}; }
 
   stageWrap.addEventListener('pointerdown', e=>{
     if(!state.imgW) return;
+    // BUGFIX: while the crop overlay is up, this handler was still running
+    // and calling stageWrap.setPointerCapture() on every pointerdown —
+    // including ones that started on the crop rectangle/handles. Since
+    // pointer capture is "last one wins", that silently stole the drag
+    // away from cropRectEl right after it had just captured the same
+    // pointer, so dragging/resizing the crop box did nothing and pressing
+    // 切り抜く just cropped to whatever the box's untouched starting size was.
+    if(cropState) return;
 
     // Palm rejection: while drawing with an Apple Pencil / stylus, ignore any extra
     // finger touch that lands on the screen (e.g. a resting palm) instead of treating
@@ -2991,7 +3094,7 @@
     activePointers.set(e.pointerId, {x:e.clientX, y:e.clientY, pressure:e.pressure, type:e.pointerType});
 
     if(activePointers.size === 1 && !justPinched){
-      if(state.tool==='pen' || state.tool==='eraser' || state.tool==='blur' || state.tool==='smudge' || state.tool==='smooth'){
+      if(state.tool==='pen' || state.tool==='eraser' || state.tool==='blur' || state.tool==='smudge' || state.tool==='smooth' || state.tool==='sharpenBrush'){
         startStroke(e);
       } else if(state.tool==='lash'){
         startLashGuide(e);
@@ -3022,32 +3125,6 @@
           const cp = screenToCanvas(e.clientX, e.clientY);
           applyEyeBulgeAt(layer, cp.x, cp.y);
           if(layer.isPhoto) renderAdjustCanvas(); else refreshLayerThumb(layer);
-        }
-      } else if(state.tool==='clone'){
-        const cp = screenToCanvas(e.clientX, e.clientY);
-        if(cloneAwaitingSource){
-          cloneSource = cp;
-          cloneOffsetLocked = false;
-          cloneAwaitingSource = false;
-          showToast('コピー元を設定したよ。次はコピーしたい場所をなぞってね');
-          updateCloneSourceLabel();
-        } else if(!cloneSource){
-          showToast('先に「コピー元を指定」でお手本の場所を選んでね');
-        } else {
-          const layer = getActiveLayer();
-          if(layer){
-            if(!cloneOffsetLocked){
-              cloneOffset = { dx: cloneSource.x-cp.x, dy: cloneSource.y-cp.y };
-              cloneOffsetLocked = true;
-            }
-            cloneBeforeData = layer.ctx.getImageData(0,0,layer.canvas.width,layer.canvas.height);
-            cloneSnapshot = document.createElement('canvas');
-            cloneSnapshot.width = layer.canvas.width; cloneSnapshot.height = layer.canvas.height;
-            cloneSnapshot.getContext('2d').drawImage(layer.canvas,0,0);
-            cloneSession = { layer, lastX:cp.x, lastY:cp.y };
-            cloneStampAt(layer, cloneSnapshot, cp.x, cp.y, state.cloneSize, cloneOffset, state.cloneStrength, state.cloneSoftness);
-            if(layer.isPhoto) renderAdjustCanvas(); else refreshLayerThumb(layer);
-          }
         }
       }
     } else if(activePointers.size === 2){
@@ -3093,18 +3170,6 @@
       const cp = screenToCanvas(e.clientX, e.clientY);
       applyEyeBulgeAt(eyeBulgeSession.layer, cp.x, cp.y);
       if(eyeBulgeSession.layer.isPhoto) renderAdjustCanvas(); else refreshLayerThumb(eyeBulgeSession.layer);
-    } else if(activePointers.size === 1 && state.tool==='clone' && cloneSession){
-      const cp = screenToCanvas(e.clientX, e.clientY);
-      const last = cloneSession;
-      const segDist = Math.hypot(cp.x-last.lastX, cp.y-last.lastY);
-      const stepSize = Math.max(3, state.cloneSize*0.2);
-      const steps = Math.max(1, Math.round(segDist/stepSize));
-      for(let i=1;i<=steps;i++){
-        const t = i/steps;
-        cloneStampAt(cloneSession.layer, cloneSnapshot, last.lastX+(cp.x-last.lastX)*t, last.lastY+(cp.y-last.lastY)*t, state.cloneSize, cloneOffset, state.cloneStrength, state.cloneSoftness);
-      }
-      cloneSession.lastX = cp.x; cloneSession.lastY = cp.y;
-      if(cloneSession.layer.isPhoto) renderAdjustCanvas(); else refreshLayerThumb(cloneSession.layer);
     } else if(activePointers.size === 1 && pinch && pinch.mode==='pan1'){
       const dx = e.clientX - pinch.last.x, dy = e.clientY - pinch.last.y;
       state.tx += dx; state.ty += dy;
@@ -3148,12 +3213,6 @@
         if(sheets.layers.classList.contains('show')) renderLayerList();
         eyeBulgeSession = null; eyeBulgeBeforeData = null;
       }
-      if(cloneSession){
-        pushHistory(cloneSession.layer, cloneBeforeData);
-        if(cloneSession.layer.isPhoto) renderAdjustCanvas(); else refreshLayerThumb(cloneSession.layer);
-        if(sheets.layers.classList.contains('show')) renderLayerList();
-        cloneSession = null; cloneBeforeData = null; cloneSnapshot = null;
-      }
       if(state.tool==='eyedropper' && eyedropSampleCtx){
         eyedropSampleCtx = null; eyedropSampleCanvas = null;
         showToast('スポイトで色を取得しました 🎨');
@@ -3176,11 +3235,11 @@
     // a plain mouse hover with nothing pressed (activePointers.size===0,
     // pointerType 'mouse') — but not mid-pinch/two-finger gestures.
     const showable = activePointers.size===1 || (activePointers.size===0 && e.pointerType==='mouse');
-    if(state.tool==='pen'||state.tool==='eraser'||state.tool==='blur'||state.tool==='smudge'||state.tool==='smooth'||state.tool==='lash'||state.tool==='eyebulge'||state.tool==='clone'){
+    if(state.tool==='pen'||state.tool==='eraser'||state.tool==='blur'||state.tool==='smudge'||state.tool==='smooth'||state.tool==='sharpenBrush'||state.tool==='lash'||state.tool==='eyebulge'){
       cursorDot.classList.remove('eyedrop');
       const rect = stageWrap.getBoundingClientRect();
       const px = (e.clientX-rect.left), py=(e.clientY-rect.top);
-      const sizePx = (state.tool==='blur' ? state.blurSize : state.tool==='smudge' ? state.smudgeSize : state.tool==='smooth' ? state.smoothSize : state.tool==='eraser' ? state.eraserSize : state.tool==='lash' ? Math.max(12, state.lashLength*0.55) : state.tool==='eyebulge' ? state.eyeBulgeRadius*2 : state.tool==='clone' ? state.cloneSize : state.size)*state.scale;
+      const sizePx = (state.tool==='blur' ? state.blurSize : state.tool==='smudge' ? state.smudgeSize : state.tool==='smooth' ? state.smoothSize : state.tool==='sharpenBrush' ? state.sharpenBrushSize : state.tool==='eraser' ? state.eraserSize : state.tool==='lash' ? Math.max(12, state.lashLength*0.55) : state.tool==='eyebulge' ? state.eyeBulgeRadius*2 : state.size)*state.scale;
       cursorDot.style.display = showable ? 'block':'none';
       cursorDot.style.background = 'transparent';
       cursorDot.style.width = sizePx+'px';
@@ -3240,7 +3299,7 @@
     const pr = pressureOf(e);
     stroke = {
       layer,
-      before: (state.tool!=='blur' && state.tool!=='smudge' && state.tool!=='smooth') ? layer.ctx.getImageData(0,0,layer.canvas.width, layer.canvas.height) : null,
+      before: (state.tool!=='blur' && state.tool!=='smudge' && state.tool!=='smooth' && state.tool!=='sharpenBrush') ? layer.ctx.getImageData(0,0,layer.canvas.width, layer.canvas.height) : null,
       raw: {x:cp.x, y:cp.y},
       smooth: {x:cp.x, y:cp.y},
       points: [{x:cp.x, y:cp.y, p:pr, t:performance.now()}],
@@ -3248,7 +3307,7 @@
     };
     stroke.scratch.width = layer.canvas.width; stroke.scratch.height = layer.canvas.height;
     stroke.scratchCtx = stroke.scratch.getContext('2d');
-    if(state.tool!=='blur' && state.tool!=='smudge' && state.tool!=='smooth'){
+    if(state.tool!=='blur' && state.tool!=='smudge' && state.tool!=='smooth' && state.tool!=='sharpenBrush'){
       ensurePreviewCanvas();
       insertPreviewFor(layer);
       previewCanvas.style.opacity = layer.opacity;
@@ -3334,7 +3393,7 @@
       previewCtx.globalCompositeOperation='destination-out';
       previewCtx.globalAlpha = state.eraserOpacity/100;
       previewCtx.drawImage(stroke.scratch,0,0);
-    } else if(state.tool==='blur' || state.tool==='smooth'){
+    } else if(state.tool==='blur' || state.tool==='smooth' || state.tool==='sharpenBrush'){
       // handled fully by the blur/smooth stroke hooks during move; nothing to composite here
     } else {
       previewCtx.globalAlpha = state.opacity/100;
@@ -3400,6 +3459,18 @@
     const tctx = tmp.getContext('2d');
     if(btype==='glitter'){
       tctx.fillStyle = tctx.createPattern(getGlitterTile(color, state.glitterSize, state.glitterDensity), 'repeat');
+    } else if(btype==='texture' && state.customBrushImage){
+      // Uses the uploaded image's own colors/alpha as-is (not tinted to the
+      // pen color) — a photographed paper/canvas/grain texture usually
+      // looks wrong forced into a flat color, and this is closer to how a
+      // CSP texture brush actually behaves (the texture defines the look,
+      // the color comes from ink density variation within it).
+      const pat = tctx.createPattern(state.customBrushImage, 'repeat');
+      if(pat && pat.setTransform){
+        const s = Math.max(0.05, (state.textureScale||100)/100);
+        try { pat.setTransform(new DOMMatrix().scale(s)); } catch(e){ /* setTransform unsupported — pattern just tiles at native size */ }
+      }
+      tctx.fillStyle = pat || color;
     } else {
       tctx.fillStyle = color;
     }
@@ -3609,6 +3680,9 @@
   // Same idea, for the なじませ (edge-aware smooth) tool below.
   let smoothSession = null;
   let smoothBeforeData = null;
+  // Same idea again, for the 部分シャープ (local sharpen) brush.
+  let sharpenBrushSession = null;
+  let sharpenBrushBeforeData = null;
 
   function commitStroke(){
     if(!stroke) return;
@@ -3626,6 +3700,15 @@
       if(smoothBeforeData){
         pushHistory(stroke.layer, smoothBeforeData);
         smoothBeforeData = null;
+        if(stroke.layer.isPhoto) renderAdjustCanvas();
+        else refreshLayerThumb(stroke.layer);
+        if(sheets.layers.classList.contains('show')) renderLayerList();
+      }
+    } else if(state.tool==='sharpenBrush'){
+      sharpenBrushSession = null;
+      if(sharpenBrushBeforeData){
+        pushHistory(stroke.layer, sharpenBrushBeforeData);
+        sharpenBrushBeforeData = null;
         if(stroke.layer.isPhoto) renderAdjustCanvas();
         else refreshLayerThumb(stroke.layer);
         if(sheets.layers.classList.contains('show')) renderLayerList();
@@ -3665,6 +3748,13 @@
         if(stroke.layer.isPhoto) renderAdjustCanvas();
       }
       smoothBeforeData = null;
+    } else if(state.tool==='sharpenBrush'){
+      sharpenBrushSession = null;
+      if(sharpenBrushBeforeData){
+        stroke.layer.ctx.putImageData(sharpenBrushBeforeData,0,0);
+        if(stroke.layer.isPhoto) renderAdjustCanvas();
+      }
+      sharpenBrushBeforeData = null;
     } else {
       // layer.ctx itself was never modified during the stroke (live preview lived on
       // previewCanvas), so there's nothing to restore on it — just reveal it again.
@@ -3761,6 +3851,7 @@
       curlStyle: state.lashCurlStyle, thickness: state.lashThickness,
       randomness: state.lashRandom, side: state.lashSide, clump: state.lashClump, clumpStyle: state.lashClumpStyle,
       shape: state.lashShape,
+      shapeIntensity: state.lashShapeIntensity,
     });
     paintLashes(layer.ctx, lashes, state.color, state.lashOpacity/100, state.lashSoftness);
 
@@ -3809,25 +3900,32 @@
   //  inner:   mirror of outer — builds up toward the trace's start corner
   //  doll:    a sharper, narrower peak right in the middle — round "doll eye"
   //  even:    flat — every lash the same length
-  function lashLenProfile(t, shape){
+  function lashLenProfile(t, shape, intensity){
+    let profile;
     switch(shape){
-      case 'outer': return 0.42 + 0.58*Math.pow(t, 1.15);
-      case 'inner': return 0.42 + 0.58*Math.pow(1-t, 1.15);
-      case 'doll':  return 0.32 + 0.68*Math.pow(Math.sin(Math.PI*t), 1.7);
-      case 'even':  return 1;
-      default:      return 0.6 + 0.4*Math.sin(Math.PI*t); // natural
+      case 'outer': profile = 0.42 + 0.58*Math.pow(t, 1.15); break;
+      case 'inner': profile = 0.42 + 0.58*Math.pow(1-t, 1.15); break;
+      case 'doll':  profile = 0.32 + 0.68*Math.pow(Math.sin(Math.PI*t), 1.7); break;
+      case 'even':  profile = 1; break;
+      default:      profile = 0.6 + 0.4*Math.sin(Math.PI*t); // natural
     }
+    // Blends between flat (no shaping at all, intensity=0) and the shape's
+    // full effect (intensity=100) — and can go past 100 to exaggerate a
+    // shape further (e.g. push 目じり長め's outer-corner extension beyond
+    // what the base formula alone gives).
+    const k = (intensity==null?100:intensity)/100;
+    return 1 + (profile-1)*k;
   }
   function buildLashStrokes(guidePts, opts){
     const lens = arcLengths(guidePts);
     const total = lens[lens.length-1];
     if(total<4) return [];
-    // Density's usable range is now 10-160 (was 10-100) so low-resolution
-    // images — where even the old minimum spacing looked clumped relative to
-    // a small eye — can go much sparser at the low end, and dense/doll-eye
-    // looks are possible at the high end. Linear from ~17px spacing at
-    // density=10 down to a 1.1px floor at density=160.
-    const dNorm = Math.min(1, Math.max(0, (opts.density-10)/150));
+    // Density's usable range is now 10-300 so low-resolution images — where
+    // even the old minimum spacing looked clumped relative to a small eye —
+    // can go much sparser at the low end, and very dense/doll-eye looks are
+    // possible at the high end. Linear from ~17px spacing at density=10 down
+    // to a 1.1px floor at density=300.
+    const dNorm = Math.min(1, Math.max(0, (opts.density-10)/290));
     const spacing = 17 - dNorm*(17-1.1);
     const n = Math.max(3, Math.floor(total/spacing));
     const seed = hashStr(guidePts.map(p=>Math.round(p.x)+','+Math.round(p.y)).join('|')) ^ Math.floor(total*7);
@@ -3856,7 +3954,7 @@
     // root point and only its growth angle differs, so the base looks like
     // a single point that fans out into 2-3 tips (plus a short one filling
     // the gap between them) — matches a hand-drawn "V" lash cluster.
-    const clump = Math.max(0, Math.min(100, opts.clump||0))/100;
+    const clump = Math.max(0, Math.min(250, opts.clump||0))/100;
     const clumpStyle = opts.clumpStyle || 'spread';
     let tList = []; // each entry: {t, extraAngle, lenScale}
     if(clump <= 0.03){
@@ -3872,13 +3970,46 @@
         // a shorter strand growing from the same root, filling the gap between the two outer tips
         tList.push({t:centerT, extraAngle:(posRng()-0.5)*fanSpread*0.3, lenScale:0.52+posRng()*0.14});
       }
+    } else if(clumpStyle==='tipjoin'){
+      // 今どきの束感アレンジ：2本の根元は少し離れているのに、毛先だけが1点に
+      // 集まって「く」の字（ダイヤ型のすき間）を作るスタイル。'joined'（根元
+      // 共有・毛先が分かれる）のちょうど逆。各根元の毛先を、その根元一本だけ
+      // で生えていた場合の毛先（中心点で計算）に強制的に合わせることで実現
+      // している——生成後の見た目はcurl/shapeの設定にちゃんと追従する。
+      // 全部を毛先ジョイントにすると不自然なので、束感が強いときほどジョイント
+      // 率を上げつつ、必ず何本かは単独の毛（根元も毛先も他と繋がらない）を
+      // 混ぜて、実際のまつ毛エクステの束アレンジに近いランダムさを出している。
+      const numClumps = Math.max(2, Math.round(n/2.4));
+      const joinProb = 0.45 + clump*0.4;
+      for(let c=0;c<numClumps;c++){
+        const centerT = Math.min(0.995, Math.max(0.005, (c+0.5)/numClumps));
+        if(posRng() >= joinProb){
+          // 単独の1本（sharedTipなし＝通常の角度計算にまかせる）
+          tList.push({t:centerT, extraAngle:0, lenScale:1});
+          continue;
+        }
+        const pC = pointAtDistance(guidePts, lens, centerT*total);
+        let cnx=-pC.ty, cny=pC.tx;
+        if(opts.side==='upper' ? cny>0 : cny<0){ cnx=-cnx; cny=-cny; }
+        const cFanBias = (centerT-0.5)*2;
+        const cTheta = (opts.curl/100)*maxTheta + cFanBias*maxFan*(opts.curl/100);
+        const ccos=Math.cos(cTheta), csin=Math.sin(cTheta);
+        let tdx = cnx*ccos + pC.tx*csin, tdy = cny*ccos + pC.ty*csin;
+        const tdl = Math.hypot(tdx,tdy)||1; tdx/=tdl; tdy/=tdl;
+        const cLenMul = lashLenProfile(centerT, opts.shape, opts.shapeIntensity);
+        const cL = Math.max(1, opts.length*cLenMul);
+        const sharedTip = { x: pC.x+tdx*cL, y: pC.y+tdy*cL };
+        const gap = (0.10/numClumps) * (0.5+clump*0.9); // how far apart the two roots start
+        tList.push({t: Math.max(0.002,centerT-gap), extraAngle:0, lenScale:1, sharedTip});
+        tList.push({t: Math.min(0.998,centerT+gap), extraAngle:0, lenScale:1, sharedTip});
+      }
     } else {
       const perClump = 2.1 + clump*2.2;                 // ~2.1 strands/clump at low clump, ~4.3 at max
       const numClumps = Math.max(2, Math.round(n/perClump));
       for(let c=0;c<numClumps;c++){
         const centerT = (c+0.5)/numClumps;
         const strandCount = Math.max(2, Math.round(2 + posRng()*1.6 + clump*1.4));
-        const spread = (0.55/numClumps) * (0.35 + 0.5*(1-clump)); // strands pack tighter as clump increases
+        const spread = (0.55/numClumps) * Math.max(0.08, 0.35 + 0.5*(1-Math.min(1,clump))); // strands pack tighter as clump increases, floors out instead of going negative past clump=1
         for(let s=0;s<strandCount;s++){
           const off = strandCount>1 ? (s-(strandCount-1)/2)/(strandCount-1)*spread : 0;
           const t = Math.min(0.995, Math.max(0.005, centerT + off + (posRng()-0.5)*spread*0.25));
@@ -3889,7 +4020,7 @@
 
     const lashes = [];
     for(let i=0;i<tList.length;i++){
-      const {t, extraAngle, lenScale} = tList[i];
+      const {t, extraAngle, lenScale, sharedTip} = tList[i];
       const p = pointAtDistance(guidePts, lens, t*total);
       const rng = lashRng(t, i);
 
@@ -3908,18 +4039,28 @@
       // lashes toward either corner sweep outward — the "扇状に広がる" look
       // from the reference image, regardless of which way it was traced.
       const fanBias = (t-0.5)*2;
-      // extraAngle fans out strands that share one root point (joined clump style).
-      const theta = (opts.curl/100)*maxTheta + fanBias*maxFan*(opts.curl/100) + jitter*(opts.randomness/100)*(Math.PI*0.14) + (extraAngle||0);
-      const cosT=Math.cos(theta), sinT=Math.sin(theta);
-      let dx = nx*cosT + p.tx*sinT;
-      let dy = ny*cosT + p.ty*sinT;
-      const dl = Math.hypot(dx,dy)||1; dx/=dl; dy/=dl;
-
-    const lenMul = lashLenProfile(t, opts.shape) * (lenScale||1);   // shape of the length curve across the eyelid; lenScale shrinks joined-clump filler strands
-      const lenJitter = 1 + (rng()-0.5)*(opts.randomness/100)*0.7;
-      const L = Math.max(1, opts.length*lenMul*lenJitter);
-      const bend = L*0.22*(opts.curl/100);
       const rootX=p.x, rootY=p.y;
+      let dx, dy, L;
+      if(sharedTip){
+        // tipjoin: aim this lash straight at the shared convergence point
+        // instead of the usual angle formula, so two different roots end
+        // up meeting at (approximately) the same tip.
+        const ddx = sharedTip.x-rootX, ddy = sharedTip.y-rootY;
+        const ddl = Math.hypot(ddx,ddy)||1;
+        dx = ddx/ddl; dy = ddy/ddl;
+        L = Math.max(1, ddl);
+      } else {
+        // extraAngle fans out strands that share one root point (joined clump style).
+        const theta = (opts.curl/100)*maxTheta + fanBias*maxFan*(opts.curl/100) + jitter*(opts.randomness/100)*(Math.PI*0.14) + (extraAngle||0);
+        const cosT=Math.cos(theta), sinT=Math.sin(theta);
+        let ddx = nx*cosT + p.tx*sinT;
+        let ddy = ny*cosT + p.ty*sinT;
+        const dl = Math.hypot(ddx,ddy)||1; dx=ddx/dl; dy=ddy/dl;
+        const lenMul = lashLenProfile(t, opts.shape, opts.shapeIntensity) * (lenScale||1);   // shape of the length curve across the eyelid; lenScale shrinks joined-clump filler strands
+        const lenJitter = 1 + (rng()-0.5)*(opts.randomness/100)*0.7;
+        L = Math.max(1, opts.length*lenMul*lenJitter);
+      }
+      const bend = L*0.22*(opts.curl/100);
 
       let ctrl1X, ctrl1Y, ctrl2X, ctrl2Y, tipX, tipY;
       if(style==='j'){
@@ -4210,6 +4351,98 @@
     _continueStroke3(e);
   };
 
+  // ---------------- 部分シャープ (local sharpen brush) ----------------
+  // The brush version of シャープ in 画像調整 — that slider sharpens the
+  // whole photo at once; this confines the exact same unsharp-mask idea
+  // (push each pixel away from a slightly blurred copy of itself) to
+  // wherever you actually brush, e.g. just the eyes or just some fine
+  // embroidery, without touching the rest of the image.
+  function sharpenBrushStrokeSetup(target, diameter, strength){
+    const w = target.canvas.width, h = target.canvas.height;
+    const source = document.createElement('canvas');
+    source.width = w; source.height = h;
+    source.getContext('2d').drawImage(target.canvas,0,0);
+
+    const blurredFull = document.createElement('canvas');
+    blurredFull.width = w; blurredFull.height = h;
+    const bctx = blurredFull.getContext('2d');
+    bctx.filter = 'blur(1.4px)'; // small fixed radius — fine-detail sharpen, not a broad clarity boost
+    bctx.drawImage(source,0,0);
+    bctx.filter = 'none';
+
+    const coverage = document.createElement('canvas');
+    coverage.width = w; coverage.height = h;
+
+    return {
+      w, h, source, blurredFull, coverage,
+      strengthAmt: Math.max(0, strength/100) * 1.6,
+      minX: w, minY: h, maxX: 0, maxY: 0,
+    };
+  }
+  function sharpenBrushRenderFrame(target, session){
+    const bx0 = Math.max(0, Math.floor(session.minX));
+    const by0 = Math.max(0, Math.floor(session.minY));
+    const bx1 = Math.min(session.w, Math.ceil(session.maxX));
+    const by1 = Math.min(session.h, Math.ceil(session.maxY));
+    const bw = bx1-bx0, bh = by1-by0;
+    if(bw<=0 || bh<=0) return;
+
+    const s = session.source.getContext('2d').getImageData(bx0,by0,bw,bh).data;
+    const b = session.blurredFull.getContext('2d').getImageData(bx0,by0,bw,bh).data;
+    const c = session.coverage.getContext('2d').getImageData(bx0,by0,bw,bh).data;
+    const out = new Uint8ClampedArray(s.length);
+    const k = session.strengthAmt;
+    for(let i=0;i<s.length;i+=4){
+      const cov = c[i+3]/255;
+      if(cov<=0){
+        out[i]=s[i]; out[i+1]=s[i+1]; out[i+2]=s[i+2]; out[i+3]=s[i+3];
+        continue;
+      }
+      const amt = cov*k;
+      out[i]   = s[i]   + (s[i]-b[i])*amt;
+      out[i+1] = s[i+1] + (s[i+1]-b[i+1])*amt;
+      out[i+2] = s[i+2] + (s[i+2]-b[i+2])*amt;
+      out[i+3] = s[i+3];
+    }
+    target.ctx.putImageData(new ImageData(out, bw, bh), bx0, by0);
+  }
+
+  const _startStroke4 = startStroke, _continueStroke4 = continueStroke;
+  startStroke = function(e){
+    _startStroke4(e);
+    if(state.tool==='sharpenBrush' && stroke){
+      const target = stroke.layer;
+      sharpenBrushBeforeData = target.ctx.getImageData(0,0,target.canvas.width,target.canvas.height);
+      sharpenBrushSession = sharpenBrushStrokeSetup(target, state.sharpenBrushSize, state.sharpenBrushStrength);
+      const cp = screenToCanvas(e.clientX, e.clientY);
+      blurStampAt(sharpenBrushSession, cp.x, cp.y, state.sharpenBrushSize);
+      sharpenBrushRenderFrame(target, sharpenBrushSession);
+      if(target.isPhoto) renderAdjustCanvas();
+    }
+  };
+  continueStroke = function(e){
+    if(state.tool==='sharpenBrush' && stroke){
+      const target = stroke.layer;
+      const cp = screenToCanvas(e.clientX, e.clientY);
+      const k = 1/(1+state.stabilization*1.6);
+      stroke.smooth.x += (cp.x - stroke.smooth.x)*k;
+      stroke.smooth.y += (cp.y - stroke.smooth.y)*k;
+      const last = stroke.points[stroke.points.length-1];
+      const segDist = Math.hypot(stroke.smooth.x-last.x, stroke.smooth.y-last.y);
+      const stepSize = Math.max(4, state.sharpenBrushSize*0.18);
+      const steps = Math.max(1, Math.round(segDist/stepSize));
+      for(let i=1;i<=steps;i++){
+        const t=i/steps;
+        blurStampAt(sharpenBrushSession, last.x+(stroke.smooth.x-last.x)*t, last.y+(stroke.smooth.y-last.y)*t, state.sharpenBrushSize);
+      }
+      sharpenBrushRenderFrame(target, sharpenBrushSession);
+      if(target.isPhoto) renderAdjustCanvas();
+      stroke.points.push({x:stroke.smooth.x, y:stroke.smooth.y, p:1, t:performance.now()});
+      return;
+    }
+    _continueStroke4(e);
+  };
+
   // ---------------- 指でなぞる (smudge) ----------------
   // This is a genuinely different tool from ぼかし, even though both end up
   // softening things: blur averages a pixel with its neighbours in place;
@@ -4377,6 +4610,13 @@
     btn.addEventListener('click', ()=>{
       document.querySelectorAll('.tool[data-tool]').forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
+      // BUGFIX: まつ毛設定シートはキャンバスに直接描けるよう backdrop を素通り
+      // させているため、他のツールボタンをタップして切り替えても（openSheet
+      // を経由しない操作なので）シートが開いたまま・パススルーも有効なまま
+      // 取り残されていた。ツールを切り替えたらそのシートは用済みなので閉じる。
+      if(state.tool==='lash' && btn.dataset.tool!=='lash' && sheets.lash.classList.contains('show')){
+        closeSheets();
+      }
       state.tool = btn.dataset.tool;
       updateBrushBtnLabel();
     });
@@ -4390,8 +4630,8 @@
     blur: document.getElementById('blurSheet'),
     smudge: document.getElementById('smudgeSheet'),
     smooth: document.getElementById('smoothSheet'),
+    sharpenBrush: document.getElementById('sharpenBrushSheet'),
     eyebulge: document.getElementById('eyeBulgeSheet'),
-    clone: document.getElementById('cloneSheet'),
     lash: document.getElementById('lashSheet'),
     color: document.getElementById('colorSheet'),
     layers: document.getElementById('layersSheet'),
@@ -4406,13 +4646,30 @@
     Object.values(sheets).forEach(s=>s.classList.remove('show'));
     sheets[name].classList.add('show');
     backdrop.classList.add('show');
+    // まつ毛設定だけは特別扱い：パネルを開いたまま、実際に目のキワをなぞって
+    // すぐ結果を見たい・微調整したい、という用途がメインのツールなので、
+    // 背景（backdrop）を素通りさせてキャンバスに直接触れるようにしている。
+    // その代わり、この間は「外側タップで閉じる」は働かない（✕ボタンで閉じてね）。
+    // 他のシートは今まで通り、外側タップで閉じられる。
+    backdrop.classList.toggle('passthrough', name==='lash');
+  }
+  // Used by header/settings buttons: tapping the button for a panel that's
+  // already open closes it again, instead of just re-opening the same thing.
+  function openSheetToggle(name){
+    if(sheets[name] && sheets[name].classList.contains('show')){
+      closeSheets();
+    } else {
+      openSheet(name);
+    }
   }
   function closeSheets(){
     Object.values(sheets).forEach(s=>s.classList.remove('show'));
+    backdrop.classList.remove('passthrough');
     backdrop.classList.remove('show');
   }
   backdrop.addEventListener('click', closeSheets);
   document.getElementById('adjustCloseBtn').addEventListener('click', closeSheets);
+  document.getElementById('lashCloseBtn').addEventListener('click', closeSheets);
   // Blur and the eraser each get their own dedicated settings tab (separate
   // size/strength from the pen's ブラシ設定), so switching tools never means
   // silently inheriting a size meant for a different tool. Eyedropper stays
@@ -4420,22 +4677,32 @@
   function updateBrushBtnLabel(){
     const label = document.querySelector('#brushToolBtn span');
     if(!label) return;
-    label.textContent = state.tool==='blur' ? 'ぼかし設定' : state.tool==='smudge' ? 'なぞる設定' : state.tool==='smooth' ? 'なじませ設定' : state.tool==='eyebulge' ? '目サイズ設定' : state.tool==='clone' ? 'スタンプ設定' : state.tool==='eraser' ? '消しゴム設定' : state.tool==='lash' ? 'まつ毛設定' : 'ブラシ設定';
+    label.textContent = state.tool==='blur' ? 'ぼかし設定' : state.tool==='smudge' ? 'なぞる設定' : state.tool==='smooth' ? 'なじませ設定' : state.tool==='sharpenBrush' ? '部分シャープ設定' : state.tool==='eyebulge' ? '目サイズ設定' : state.tool==='eraser' ? '消しゴム設定' : state.tool==='lash' ? 'まつ毛設定' : 'ブラシ設定';
   }
   function targetSheetForTool(){
     if(state.tool==='blur') return 'blur';
     if(state.tool==='smudge') return 'smudge';
     if(state.tool==='smooth') return 'smooth';
+    if(state.tool==='sharpenBrush') return 'sharpenBrush';
     if(state.tool==='eyebulge') return 'eyebulge';
-    if(state.tool==='clone') return 'clone';
     if(state.tool==='eraser') return 'eraser';
     if(state.tool==='lash') return 'lash';
     return 'brush';
   }
-  document.getElementById('brushToolBtn').addEventListener('click', ()=>{ openSheet(targetSheetForTool()); updateBrushPreview(); updateBlurTargetLabel(); updateEraserPreview(); updateLashPreview(); updateSmoothPreview(); updateEyeBulgePreview(); updateClonePreview(); updateCloneSourceLabel(); });
-  document.getElementById('colorToolBtn').addEventListener('click', ()=>openSheet('color'));
-  document.getElementById('layersHeaderBtn').addEventListener('click', ()=>{ openSheet('layers'); renderLayerList(); });
-  document.getElementById('adjustToolBtn').addEventListener('click', ()=>{ updateUpscaleLabel(); updateBlurTargetLabel(); openSheet('adjust'); });
+  document.getElementById('brushToolBtn').addEventListener('click', ()=>{
+    const target = targetSheetForTool();
+    // Tap again while its own panel is already open → close it instead of
+    // doing nothing (the requested "press again to close" behavior).
+    if(sheets[target] && sheets[target].classList.contains('show')){
+      closeSheets();
+      return;
+    }
+    openSheet(target);
+    updateBrushPreview(); updateBlurTargetLabel(); updateEraserPreview(); updateLashPreview(); updateSmoothPreview(); updateEyeBulgePreview(); updateSharpenBrushPreview();
+  });
+  document.getElementById('colorToolBtn').addEventListener('click', ()=>openSheetToggle('color'));
+  document.getElementById('layersHeaderBtn').addEventListener('click', ()=>{ if(sheets.layers.classList.contains('show')){ closeSheets(); return; } openSheet('layers'); renderLayerList(); });
+  document.getElementById('adjustToolBtn').addEventListener('click', ()=>{ if(sheets.adjust.classList.contains('show')){ closeSheets(); return; } updateUpscaleLabel(); updateBlurTargetLabel(); openSheet('adjust'); });
   document.getElementById('helpBtn').addEventListener('click', ()=>{ openSheet('help'); });
 
 
@@ -4538,6 +4805,68 @@
     // typed value back into the slider's raw position — see wireEditableValue.
     el._actualToRaw = actualToRaw;
   }
+
+  // ---------------- CSPのようなサイズプリセット一覧 (size picker popup) ----------------
+  // A tap-to-jump grid of common sizes, same idea as CLIP STUDIO PAINT's own
+  // brush-size popup — sits alongside the slider (never replaces it), for
+  // landing on an exact common value in one tap instead of dragging.
+  const SIZE_PRESETS = [0.7,1,1.5,2,2.5,3,4,5,6,7,8,10,12,15,17,20,25,30,40,50,60,70,80,100,120,150,170,200,250,300,400,500,600,700,800,1000,1200,1500,1700,2000];
+  function closeSizePicker(){
+    document.getElementById('sizePickerBackdrop').classList.remove('show');
+  }
+  function openSizePicker(min, max, current, onPick){
+    const list = SIZE_PRESETS.filter(v=>v>=min && v<=max);
+    if(list.length===0) return;
+    const grid = document.getElementById('sizePickerGrid');
+    grid.innerHTML = '';
+    const maxV = Math.max(...list);
+    list.forEach(v=>{
+      const cell = document.createElement('div');
+      cell.className = 'sizePickerCell' + (Math.abs(v-current) < Math.max(0.01, v*0.02) ? ' sel' : '');
+      const wrap = document.createElement('div');
+      wrap.className = 'sizePickerDotWrap';
+      const dot = document.createElement('div');
+      dot.className = 'sizePickerDot';
+      const px = Math.max(5, Math.min(32, 5 + Math.sqrt(v/maxV)*27));
+      dot.style.width = px+'px'; dot.style.height = px+'px';
+      wrap.appendChild(dot);
+      const label = document.createElement('div');
+      label.className = 'sizePickerLabel';
+      label.textContent = v;
+      cell.appendChild(wrap); cell.appendChild(label);
+      cell.addEventListener('click', ()=>{ onPick(v); closeSizePicker(); });
+      grid.appendChild(cell);
+    });
+    document.getElementById('sizePickerBackdrop').classList.add('show');
+  }
+  document.getElementById('sizePickerBackdrop').addEventListener('click', (e)=>{
+    if(e.target.id==='sizePickerBackdrop') closeSizePicker();
+  });
+  // Delegated so this covers every current and future .sizePickBtn without
+  // needing a separate wire-up call per slider.
+  document.addEventListener('click', (e)=>{
+    const btn = e.target.closest('.sizePickBtn');
+    if(!btn) return;
+    const sliderId = btn.dataset.sizepick;
+    const slider = document.getElementById(sliderId);
+    if(!slider) return;
+    const min = +btn.dataset.min, max = +btn.dataset.max;
+    // For power-curve sliders the slider's own .value is the raw 0-1000
+    // position, not the actual size — read the actual value from the
+    // paired number/span display instead, which always shows the real size.
+    const valEl = slider.parentElement.querySelector('.valNum, .val');
+    const currentActual = valEl ? parseFloat(valEl.value !== undefined ? valEl.value : valEl.textContent) : +slider.value;
+    openSizePicker(min, max, currentActual, (v)=>{
+      if(slider._actualToRaw){
+        slider.value = slider._actualToRaw(v);
+      } else {
+        slider.value = v;
+      }
+      slider.dispatchEvent(new Event('input', {bubbles:true}));
+      slider.dispatchEvent(new Event('change', {bubbles:true}));
+    });
+  });
+
   bindPowerRange('sizeSlider','sizeVal','size', 0.1, 120, 2.6, 1);
 
   // ---------------- よく使う太さ (recent brush sizes) ----------------
@@ -4587,8 +4916,136 @@
   bindRange('smudgeStrengthSlider','smudgeStrengthVal','smudgeStrength','');
   bindPowerRange('smoothSizeSlider','smoothSizeVal','smoothSize', 2, 260, 2.4, 0);
   bindRange('smoothStrengthSlider','smoothStrengthVal','smoothStrength','');
+  bindPowerRange('sharpenBrushSizeSlider','sharpenBrushSizeVal','sharpenBrushSize', 4, 200, 2.4, 0);
+  bindRange('sharpenBrushStrengthSlider','sharpenBrushStrengthVal','sharpenBrushStrength','');
   bindRange('glitterSizeSlider','glitterSizeVal','glitterSize','');
   bindRange('glitterDensitySlider','glitterDensityVal','glitterDensity','');
+
+  // ---------------- カスタム質感ブラシ (custom texture upload) ----------------
+  // Persisted as a data URL in localStorage (not just in-memory state) so a
+  // texture someone uploaded is still there next time they open the app —
+  // same reasoning as the recent-sizes/lash-preset persistence elsewhere.
+  bindRange('textureScaleSlider','textureScaleVal','textureScale','');
+  document.getElementById('textureScaleSlider').addEventListener('input', updateBrushPreview);
+  // Built-in textures — generated on the fly (no file needed at all), since
+  // "go find/extract a texture image from a downloaded brush" turned out to
+  // be the actual blocker for most people. Each returns a small tileable
+  // canvas, usable directly as a createPattern source just like an uploaded
+  // image.
+  function makePaperTexture(){
+    const c = document.createElement('canvas'); c.width=80; c.height=80;
+    const ctx = c.getContext('2d');
+    const id = ctx.createImageData(80,80);
+    for(let i=0;i<id.data.length;i+=4){
+      const v = 238 + (Math.random()*2-1)*40;
+      id.data[i]=id.data[i+1]=id.data[i+2]=Math.max(0,Math.min(255,v));
+      id.data[i+3]=255;
+    }
+    ctx.putImageData(id,0,0);
+    return c;
+  }
+  function makeCanvasTexture(){
+    const c = document.createElement('canvas'); c.width=16; c.height=16;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#f2efe9'; ctx.fillRect(0,0,16,16);
+    ctx.strokeStyle = 'rgba(60,50,40,0.16)'; ctx.lineWidth = 1;
+    for(let i=0.5;i<16;i+=3){ ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(16,i); ctx.stroke(); }
+    for(let i=0.5;i<16;i+=3){ ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,16); ctx.stroke(); }
+    return c;
+  }
+  function makeGrainTexture(){
+    const c = document.createElement('canvas'); c.width=64; c.height=64;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#f6f4f0'; ctx.fillRect(0,0,64,64);
+    for(let i=0;i<900;i++){
+      const x=Math.random()*64, y=Math.random()*64;
+      const a = Math.random()*0.35;
+      ctx.fillStyle = `rgba(40,30,20,${a})`;
+      ctx.fillRect(x,y,1,1);
+    }
+    return c;
+  }
+  function makeInkTexture(){
+    const c = document.createElement('canvas'); c.width=96; c.height=96;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,96,96);
+    for(let i=0;i<26;i++){
+      const x=Math.random()*96, y=Math.random()*96, r=6+Math.random()*14;
+      const g = ctx.createRadialGradient(x,y,0,x,y,r);
+      g.addColorStop(0, 'rgba(0,0,0,0.22)');
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+    }
+    return c;
+  }
+  const BUILTIN_TEXTURES = { paper: makePaperTexture, canvas: makeCanvasTexture, grain: makeGrainTexture, ink: makeInkTexture };
+  let builtinTextureCache = {};
+  document.querySelectorAll('#textureBuiltinRow .presetChip').forEach(chip=>{
+    chip.addEventListener('click', ()=>{
+      document.querySelectorAll('#textureBuiltinRow .presetChip').forEach(c=>c.classList.remove('sel'));
+      chip.classList.add('sel');
+      const key = chip.dataset.texture;
+      document.getElementById('textureThumbRow').style.display = 'none';
+      if(key==='none'){
+        state.customBrushImage = null;
+      } else {
+        if(!builtinTextureCache[key]) builtinTextureCache[key] = BUILTIN_TEXTURES[key]();
+        state.customBrushImage = builtinTextureCache[key];
+      }
+      try { localStorage.removeItem('kahitsu_customBrushTexture'); } catch(e){}
+      try { localStorage.setItem('kahitsu_builtinTexture', key); } catch(e){}
+      updateBrushPreview();
+    });
+  });
+  function loadCustomBrushImage(dataUrl){
+    const img = new Image();
+    img.onload = () => {
+      state.customBrushImage = img;
+      document.getElementById('textureThumb').src = dataUrl;
+      document.getElementById('textureThumbRow').style.display = 'flex';
+      document.querySelectorAll('#textureBuiltinRow .presetChip').forEach(c=>c.classList.remove('sel'));
+      updateBrushPreview();
+    };
+    img.src = dataUrl;
+  }
+  document.getElementById('textureUploadBtn').addEventListener('click', ()=>{
+    document.getElementById('textureUploadInput').click();
+  });
+  document.getElementById('textureUploadInput').addEventListener('change', (e)=>{
+    const file = e.target.files && e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result;
+      loadCustomBrushImage(dataUrl);
+      try {
+        localStorage.setItem('kahitsu_customBrushTexture', dataUrl);
+        localStorage.removeItem('kahitsu_builtinTexture');
+      } catch(err){ /* storage unavailable — texture just won't persist across reloads */ }
+    };
+    reader.readAsDataURL(file);
+  });
+  document.getElementById('textureRemoveBtn').addEventListener('click', ()=>{
+    state.customBrushImage = null;
+    document.getElementById('textureThumbRow').style.display = 'none';
+    document.getElementById('textureUploadInput').value = '';
+    document.querySelectorAll('#textureBuiltinRow .presetChip').forEach(c=>c.classList.remove('sel'));
+    document.querySelector('#textureBuiltinRow .presetChip[data-texture="none"]').classList.add('sel');
+    try { localStorage.removeItem('kahitsu_customBrushTexture'); } catch(e){}
+    updateBrushPreview();
+  });
+  try {
+    const savedTexture = localStorage.getItem('kahitsu_customBrushTexture');
+    const savedBuiltin = localStorage.getItem('kahitsu_builtinTexture');
+    if(savedTexture){
+      loadCustomBrushImage(savedTexture);
+    } else if(savedBuiltin && BUILTIN_TEXTURES[savedBuiltin]){
+      builtinTextureCache[savedBuiltin] = BUILTIN_TEXTURES[savedBuiltin]();
+      state.customBrushImage = builtinTextureCache[savedBuiltin];
+      document.querySelectorAll('#textureBuiltinRow .presetChip').forEach(c=>c.classList.toggle('sel', c.dataset.texture===savedBuiltin));
+    }
+  } catch(e){ /* storage unavailable */ }
   function updateBlurPreview(){
     const el = document.getElementById('blurSizePreview');
     if(!el) return;
@@ -4616,6 +5073,15 @@
   }
   document.getElementById('smoothSizeSlider').addEventListener('input', updateSmoothPreview);
   updateSmoothPreview();
+  function updateSharpenBrushPreview(){
+    const el = document.getElementById('sharpenBrushSizePreview');
+    if(!el) return;
+    const shown = Math.min(96, Math.max(6, state.sharpenBrushSize*0.4));
+    el.style.width = shown+'px';
+    el.style.height = shown+'px';
+  }
+  document.getElementById('sharpenBrushSizeSlider').addEventListener('input', updateSharpenBrushPreview);
+  updateSharpenBrushPreview();
 
   // ---- Eyelash assist sheet bindings ----
   // Draws a sample eyelid curve at the current settings so density/length/
@@ -4627,28 +5093,45 @@
   // render down to fit the small preview box. This keeps the preview an
   // exact match for what drawing on the real photo will actually look like.
   function updateLashPreview(){
-    const canvas = document.getElementById('lashPreviewCanvas');
-    if(!canvas) return;
-    const ctx = canvas.getContext('2d');
-    const W = canvas.width, H = canvas.height;
-    ctx.clearRect(0,0,W,H);
+    const targets = ['lashPreviewCanvas'].map(id=>document.getElementById(id)).filter(Boolean);
+    if(targets.length===0) return;
 
-    const naturalW = 640, naturalH = 320;
+    const baseW = 640, baseH = 320;
     const guide = [];
     const gN = 24;
     for(let i=0;i<=gN;i++){
       const t = i/gN;
-      guide.push({ x: 70 + t*(naturalW-140), y: naturalH*0.8 - Math.sin(t*Math.PI)*(naturalH*0.16) });
+      guide.push({ x: 70 + t*(baseW-140), y: baseH*0.8 - Math.sin(t*Math.PI)*(baseH*0.16) });
     }
     const lashes = buildLashStrokes(guide, {
       density: state.lashDensity, length: state.lashLength, curl: state.lashCurl,
       curlStyle: state.lashCurlStyle, thickness: state.lashThickness,
       randomness: state.lashRandom, side: state.lashSide, clump: state.lashClump, clumpStyle: state.lashClumpStyle,
       shape: state.lashShape,
+      shapeIntensity: state.lashShapeIntensity,
     });
+    // Render a few times bigger than the guide's own 640×320 logical size,
+    // then downscale-to-fit at the end — otherwise, once the auto-zoom below
+    // crops into a small design (short 長さ, subtle カール), it was stretching
+    // an already-rasterized low-res crop up to fill the preview box, which
+    // is what actually looked "low resolution". Scaling every lash's own
+    // coordinates (rather than relying on a canvas transform, which doesn't
+    // compose cleanly through paintLashes' internal scratch canvases) keeps
+    // this a simple, safe multiply — density/spacing math inside
+    // buildLashStrokes never sees or is affected by this, since it already
+    // ran on the unscaled guide.
+    const RS = 3;
+    const naturalW = baseW*RS, naturalH = baseH*RS;
+    const scaledLashes = lashes.map(l => ({
+      rootX:l.rootX*RS, rootY:l.rootY*RS,
+      ctrl1X:l.ctrl1X*RS, ctrl1Y:l.ctrl1Y*RS,
+      ctrl2X:l.ctrl2X*RS, ctrl2Y:l.ctrl2Y*RS,
+      tipX:l.tipX*RS, tipY:l.tipY*RS,
+      w0:l.w0*RS, w1:l.w1*RS,
+    }));
     const off = document.createElement('canvas');
     off.width = naturalW; off.height = naturalH;
-    paintLashes(off.getContext('2d'), lashes, state.color, state.lashOpacity/100, state.lashSoftness);
+    paintLashes(off.getContext('2d'), scaledLashes, state.color, state.lashOpacity/100, state.lashSoftness);
 
     // Auto-zoom: at a small 長さ (or a subtle カール), the actual lashes only
     // take up a small corner of the fixed-size guide canvas, so a low value
@@ -4658,13 +5141,13 @@
     // and fits the crop to THAT instead of always showing the whole guide —
     // so the preview zooms in automatically as the design gets smaller.
     let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
-    lashes.forEach(l=>{
+    scaledLashes.forEach(l=>{
       [[l.rootX,l.rootY],[l.ctrl1X,l.ctrl1Y],[l.ctrl2X,l.ctrl2Y],[l.tipX,l.tipY]].forEach(([x,y])=>{
         if(x<minX)minX=x; if(x>maxX)maxX=x; if(y<minY)minY=y; if(y>maxY)maxY=y;
       });
     });
-    if(!lashes.length || !isFinite(minX)){ minX=0; minY=0; maxX=naturalW; maxY=naturalH; }
-    const pad = 22;
+    if(!scaledLashes.length || !isFinite(minX)){ minX=0; minY=0; maxX=naturalW; maxY=naturalH; }
+    const pad = 22*RS;
     minX=Math.max(0,minX-pad); minY=Math.max(0,minY-pad);
     maxX=Math.min(naturalW,maxX+pad); maxY=Math.min(naturalH,maxY+pad);
     // Never zoom in past ~1/4 of the full guide width, so a single tiny
@@ -4674,9 +5157,15 @@
     let cropX = Math.min(Math.max(0,(minX+maxX)/2-cropW/2), naturalW-cropW);
     let cropY = Math.min(Math.max(0,(minY+maxY)/2-cropH/2), naturalH-cropH);
 
-    const scale = Math.min(W/cropW, H/cropH) * 0.94;
-    const dw = cropW*scale, dh = cropH*scale;
-    ctx.drawImage(off, cropX,cropY,cropW,cropH, (W-dw)/2, (H-dh)/2, dw, dh);
+    const scale0 = 0.94;
+    targets.forEach(canvas=>{
+      const ctx = canvas.getContext('2d');
+      const W = canvas.width, H = canvas.height;
+      ctx.clearRect(0,0,W,H);
+      const scale = Math.min(W/cropW, H/cropH) * scale0;
+      const dw = cropW*scale, dh = cropH*scale;
+      ctx.drawImage(off, cropX,cropY,cropW,cropH, (W-dw)/2, (H-dh)/2, dw, dh);
+    });
   }
   function bindLashRange(id, valId, key, suffix, digits){
     const el = document.getElementById(id), vl = document.getElementById(valId);
@@ -4690,6 +5179,7 @@
   bindLashRange('lashClumpSlider','lashClumpVal','lashClump','');
   bindPowerRange('lashLengthSlider','lashLengthVal','lashLength', 2, 160, 2.2, 0);
   document.getElementById('lashLengthSlider').addEventListener('input', updateLashPreview);
+  bindLashRange('lashShapeIntensitySlider','lashShapeIntensityVal','lashShapeIntensity','');
   bindLashRange('lashCurlSlider','lashCurlVal','lashCurl','');
   bindLashRange('lashThicknessSlider','lashThicknessVal','lashThickness','',1);
   bindLashRange('lashRandomSlider','lashRandomVal','lashRandom','');
@@ -4719,6 +5209,7 @@
   }
   wireEditableValue('sizeSlider','sizeVal');
   wireEditableValue('lashDensitySlider','lashDensityVal');
+  wireEditableValue('lashShapeIntensitySlider','lashShapeIntensityVal');
   wireEditableValue('lashClumpSlider','lashClumpVal');
   wireEditableValue('lashLengthSlider','lashLengthVal');
   wireEditableValue('lashCurlSlider','lashCurlVal');
@@ -4762,7 +5253,7 @@
   updateLashPreview();
 
   // ---------------- まつ毛プリセット (save/recall a full lash style) ----------------
-  const LASH_PRESET_KEYS = ['lashDensity','lashClump','lashClumpStyle','lashLength','lashCurl','lashCurlStyle','lashShape','lashThickness','lashRandom','lashOpacity','lashSoftness'];
+  const LASH_PRESET_KEYS = ['lashDensity','lashClump','lashClumpStyle','lashLength','lashCurl','lashCurlStyle','lashShape','lashShapeIntensity','lashThickness','lashRandom','lashOpacity','lashSoftness'];
   let lashPresets = [];
   try { lashPresets = JSON.parse(localStorage.getItem('kahitsu_lashPresets')||'[]'); } catch(e){ lashPresets = []; }
   function saveLashPresets(){
@@ -4777,8 +5268,8 @@
     document.getElementById('lashLengthSlider').value = document.getElementById('lashLengthSlider')._actualToRaw(state.lashLength);
     setValDisplay(document.getElementById('lashLengthVal'), state.lashLength);
     const plain = [['lashDensitySlider','lashDensityVal'],['lashClumpSlider','lashClumpVal'],['lashCurlSlider','lashCurlVal'],
-     ['lashRandomSlider','lashRandomVal'],['lashOpacitySlider','lashOpacityVal'],['lashSoftnessSlider','lashSoftnessVal']];
-    const keyOf = {lashDensitySlider:'lashDensity',lashClumpSlider:'lashClump',lashCurlSlider:'lashCurl',lashRandomSlider:'lashRandom',lashOpacitySlider:'lashOpacity',lashSoftnessSlider:'lashSoftness'};
+     ['lashRandomSlider','lashRandomVal'],['lashOpacitySlider','lashOpacityVal'],['lashSoftnessSlider','lashSoftnessVal'],['lashShapeIntensitySlider','lashShapeIntensityVal']];
+    const keyOf = {lashDensitySlider:'lashDensity',lashClumpSlider:'lashClump',lashCurlSlider:'lashCurl',lashRandomSlider:'lashRandom',lashOpacitySlider:'lashOpacity',lashSoftnessSlider:'lashSoftness',lashShapeIntensitySlider:'lashShapeIntensity'};
     plain.forEach(([sid,vid])=>{
       const el = document.getElementById(sid), vl = document.getElementById(vid);
       el.value = state[keyOf[sid]];
@@ -4884,6 +5375,7 @@
       el.classList.add('sel');
       state.brushType = el.dataset.btype;
       document.getElementById('glitterControls').style.display = state.brushType==='glitter' ? 'block' : 'none';
+      document.getElementById('textureControls').style.display = state.brushType==='texture' ? 'block' : 'none';
       // Each brush type has a different character, so switching now also
       // switches its related numbers to that type's sensible defaults —
       // previously only 普通のペン did this (resetting ふちのやわらかさ/テーパー),
@@ -5355,8 +5847,8 @@
     if(el3) el3.textContent = label;
     const el4 = document.getElementById('eyeBulgeTargetLabel');
     if(el4) el4.textContent = label;
-    const el5 = document.getElementById('cloneTargetLabel');
-    if(el5) el5.textContent = label;
+    const el6 = document.getElementById('sharpenBrushTargetLabel');
+    if(el6) el6.textContent = label;
   }
   document.getElementById('addLayerBtn').addEventListener('click', ()=>{
     if(!state.imgW){ showToast('先に写真を読み込んでね'); return; }
