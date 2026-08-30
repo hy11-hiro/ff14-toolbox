@@ -995,6 +995,32 @@
   <div class="row" id="exportQualityRow" style="display:none;"><label>画質</label><input type="range" id="exportQualitySlider" min="10" max="100" value="90"><span class="val" id="exportQualityVal">90</span></div>
 
   <button id="doExportBtn" style="width:100%;padding:12px;border-radius:16px;border:none;background:linear-gradient(120deg, var(--crystal), #a3c9ff);color:#101431;font-weight:700;font-size:13px;font-family:'M PLUS Rounded 1c';">この設定で保存する</button>
+  <button id="xSplitOpenBtn" style="width:100%;padding:11px;border-radius:16px;border:1px solid var(--line);background:var(--bg-panel2);color:var(--text-dim);font-weight:700;font-size:12.5px;font-family:'M PLUS Rounded 1c';margin-top:10px;">🐦 Xで繋がって見える分割投稿用に保存</button>
+</div>
+
+<!-- X (Twitter) split-post sheet: crops/splits the flattened image into 2〜4
+     vertical strips sized to match how X lays out that many attached photos,
+     so posting them together in order looks like one continuous image. -->
+<div class="sheet" id="xSplitSheet" style="max-height:82vh;">
+  <div class="sheetHandle"></div>
+  <div class="sheetTitle">🐦 X分割投稿</div>
+  <p style="font-size:11.5px;color:var(--text-dim);line-height:1.7;margin:0 0 12px;">1枚の画像をXの複数枚投稿でつながって見えるように分割します。書き出された1枚目→2枚目…の順番のまま、Xの投稿に添付してください。Xの仕様上、画像の間にわずかな隙間が入るため、境目が数px分ズレて見えることがあります。</p>
+  <div class="presetRow" id="xSplitCountRow" style="flex-wrap:wrap;overflow:visible;">
+    <div class="presetChip sel" data-n="2">2枚</div>
+    <div class="presetChip" data-n="3">3枚</div>
+    <div class="presetChip" data-n="4">4枚</div>
+  </div>
+  <div class="previewLabel" id="xSplitStatusLabel">-</div>
+  <div id="xSplitPreviewWrap" style="position:relative;border:1px solid var(--line);border-radius:14px;overflow:hidden;margin:8px 0 12px;background:#000;line-height:0;">
+    <canvas id="xSplitPreviewCanvas"></canvas>
+  </div>
+  <div class="row" id="xSplitOffsetRow" style="display:none;">
+    <label id="xSplitOffsetLabel">切り抜き位置</label>
+    <input type="range" id="xSplitOffsetSlider" min="0" max="100" value="50">
+    <span class="val" id="xSplitOffsetVal">50</span>
+  </div>
+  <div id="xSplitTileGrid" style="display:flex;gap:8px;margin-bottom:12px;overflow-x:auto;"></div>
+  <button id="doXSplitSaveAllBtn" style="width:100%;padding:12px;border-radius:16px;border:none;background:linear-gradient(120deg, var(--crystal), #a3c9ff);color:#101431;font-weight:700;font-size:13px;font-family:'M PLUS Rounded 1c';">💾 すべて保存</button>
 </div>
 
 <!-- Help / manual sheet -->
@@ -4639,6 +4665,7 @@
     filter: document.getElementById('filterSheet'),
     size: document.getElementById('sizeSheet'),
     export: document.getElementById('exportSheet'),
+    xSplit: document.getElementById('xSplitSheet'),
     text: document.getElementById('textSheet'),
     help: document.getElementById('helpSheet'),
   };
@@ -5674,12 +5701,38 @@
       row.appendChild(thumb);
 
       const info = document.createElement('div'); info.className='layerInfo';
+      const nameRow = document.createElement('div'); nameRow.style.cssText='display:flex;align-items:center;gap:5px;';
       const nm = document.createElement('div'); nm.className='lname'; nm.textContent = layer.name;
+      nm.style.cssText='overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+      const renameBtn = document.createElement('button');
+      renameBtn.className='miniBtn'; renameBtn.textContent='✏️';
+      renameBtn.title = 'レイヤー名を変更';
+      renameBtn.style.cssText='font-size:9px;padding:2px 5px;flex:none;';
+      renameBtn.addEventListener('click', (ev)=>{
+        ev.stopPropagation();
+        const input = document.createElement('input');
+        input.type='text'; input.value=layer.name; input.className='lnameInput';
+        input.style.cssText='flex:1;min-width:0;font-size:12px;background:var(--bg-sheet);border:1px solid var(--line);border-radius:6px;padding:2px 6px;color:var(--text);';
+        nameRow.replaceChild(input, nm);
+        input.focus(); input.select();
+        const commit = ()=>{
+          const v = input.value.trim();
+          if(v) layer.name = v;
+          renderLayerList();
+        };
+        input.addEventListener('keydown', e=>{
+          if(e.key==='Enter'){ e.preventDefault(); commit(); }
+          else if(e.key==='Escape'){ e.preventDefault(); renderLayerList(); }
+        });
+        input.addEventListener('blur', commit);
+        input.addEventListener('click', e=>e.stopPropagation());
+      });
+      nameRow.appendChild(nm); nameRow.appendChild(renameBtn);
       const opRow = document.createElement('div'); opRow.className='lop';
       const opInput = document.createElement('input'); opInput.type='range'; opInput.min=0; opInput.max=100; opInput.value=Math.round(layer.opacity*100);
       opInput.addEventListener('input', ()=>{ layer.opacity = opInput.value/100; applyLayerStyle(layer); });
       opRow.appendChild(opInput);
-      info.appendChild(nm); info.appendChild(opRow);
+      info.appendChild(nameRow); info.appendChild(opRow);
 
       const blendSelect = document.createElement('select');
       blendSelect.className = 'blendSelect';
@@ -5781,7 +5834,7 @@
       row.appendChild(btns);
 
       row.addEventListener('click', (ev)=>{
-        if(ev.target===opInput || ev.target===visBtn || ev.target===mergeBtn || ev.target===clearBtn || ev.target===delBtn || ev.target===blendSelect || ev.target===upBtn || ev.target===downBtn) return;
+        if(ev.target===opInput || ev.target===visBtn || ev.target===mergeBtn || ev.target===clearBtn || ev.target===delBtn || ev.target===blendSelect || ev.target===upBtn || ev.target===downBtn || ev.target===renameBtn || ev.target.tagName==='INPUT') return;
         state.activeLayerId = layer.id;
         renderLayerList();
         updateBlurTargetLabel();
@@ -6297,6 +6350,162 @@
         finishBtn();
       }
     }, 30);
+  });
+
+  // ---------------- X (Twitter) split-post ----------------
+  // Splits the flattened image into 2〜4 vertical strips sized to match how X
+  // lays out that many attached photos in one tweet, so posting them together
+  // in order (1枚目→2枚目…) looks like one continuous photo. The target
+  // width:height ratio per tile count comes from matching X's own display
+  // area for that many attached photos (kept constant for 2/3-photo tweets;
+  // noticeably squarer for a 4-photo tweet, hence the bigger top/bottom crop).
+  const X_SPLIT_ASPECT = { 2: 1600/1066, 3: 1600/1066, 4: 1600/816 };
+  let xSplitN = 2;
+  let xSplitOffset = 0.5; // 0..1 position along whichever axis needs cropping
+  let xSplitSrc = null;   // flattened source canvas, captured once when the sheet opens
+  let xSplitTilesCache = [];
+
+  function xSplitCompute(){
+    if(!xSplitSrc) return null;
+    const sw = xSplitSrc.width, sh = xSplitSrc.height;
+    const targetAspect = X_SPLIT_ASPECT[xSplitN];
+    const srcAspect = sw/sh;
+    const TOL = 0.01;
+    let cropW, cropH, cropX, cropY, needsCrop, cropAxis;
+    if(Math.abs(srcAspect-targetAspect) < TOL){
+      cropW=sw; cropH=sh; cropX=0; cropY=0; needsCrop=false; cropAxis=null;
+    } else if(srcAspect > targetAspect){
+      // source is relatively wider than the target shape -> trim left/right
+      cropH = sh;
+      cropW = Math.max(1, Math.round(sh*targetAspect));
+      cropY = 0;
+      cropX = Math.round((sw-cropW)*xSplitOffset);
+      needsCrop = true; cropAxis = 'x';
+    } else {
+      // source is relatively taller -> trim top/bottom
+      cropW = sw;
+      cropH = Math.max(1, Math.round(sw/targetAspect));
+      cropX = 0;
+      cropY = Math.round((sh-cropH)*xSplitOffset);
+      needsCrop = true; cropAxis = 'y';
+    }
+    return {sw, sh, cropW, cropH, cropX, cropY, needsCrop, cropAxis};
+  }
+
+  function renderXSplitPreview(){
+    const info = xSplitCompute();
+    const statusLabel = document.getElementById('xSplitStatusLabel');
+    const offsetRow = document.getElementById('xSplitOffsetRow');
+    const offsetLabel = document.getElementById('xSplitOffsetLabel');
+    if(!info){ statusLabel.textContent = '先に写真を読み込んでね'; return; }
+    const tileW = Math.round(info.cropW / xSplitN);
+    const tileH = info.cropH;
+    statusLabel.textContent = !info.needsCrop
+      ? `切り抜き不要　${tileW}×${tileH}px ×${xSplitN}枚`
+      : (info.cropAxis==='y'
+          ? `上下を切り抜きます　${tileW}×${tileH}px ×${xSplitN}枚`
+          : `左右を切り抜きます　${tileW}×${tileH}px ×${xSplitN}枚`);
+    offsetRow.style.display = info.needsCrop ? 'flex' : 'none';
+    if(info.needsCrop) offsetLabel.textContent = info.cropAxis==='y' ? '切り抜き位置（上下）' : '切り抜き位置（左右）';
+
+    const pc = document.getElementById('xSplitPreviewCanvas');
+    const maxPW = 640;
+    const scale = Math.min(1, maxPW/info.sw);
+    pc.width = Math.max(1, Math.round(info.sw*scale));
+    pc.height = Math.max(1, Math.round(info.sh*scale));
+    pc.style.width = '100%'; pc.style.height = 'auto';
+    const pctx = pc.getContext('2d');
+    pctx.drawImage(xSplitSrc, 0, 0, pc.width, pc.height);
+
+    const rx = info.cropX*scale, ry = info.cropY*scale, rw = info.cropW*scale, rh = info.cropH*scale;
+    pctx.fillStyle = 'rgba(0,0,0,0.55)';
+    if(ry>0) pctx.fillRect(0,0,pc.width, ry);
+    if(ry+rh < pc.height) pctx.fillRect(0, ry+rh, pc.width, pc.height-(ry+rh));
+    if(rx>0) pctx.fillRect(0, ry, rx, rh);
+    if(rx+rw < pc.width) pctx.fillRect(rx+rw, ry, pc.width-(rx+rw), rh);
+
+    pctx.strokeStyle = '#22c55e'; pctx.lineWidth = 2;
+    for(let i=1;i<xSplitN;i++){
+      const x = rx + rw*i/xSplitN;
+      pctx.beginPath(); pctx.moveTo(x, ry); pctx.lineTo(x, ry+rh); pctx.stroke();
+    }
+    pctx.strokeStyle = 'rgba(243,205,142,0.9)'; pctx.lineWidth = 1.5;
+    pctx.strokeRect(rx, ry, rw, rh);
+
+    renderXSplitTiles(info, tileW, tileH);
+  }
+
+  function renderXSplitTiles(info, tileW, tileH){
+    const grid = document.getElementById('xSplitTileGrid');
+    grid.innerHTML = '';
+    xSplitTilesCache = [];
+    for(let i=0;i<xSplitN;i++){
+      const tile = document.createElement('canvas');
+      tile.width = tileW; tile.height = tileH;
+      tile.getContext('2d').drawImage(xSplitSrc, info.cropX+tileW*i, info.cropY, tileW, tileH, 0, 0, tileW, tileH);
+      xSplitTilesCache.push(tile);
+
+      const cell = document.createElement('div');
+      cell.style.cssText = 'flex:none;width:76px;text-align:center;';
+      const thumb = document.createElement('img');
+      thumb.src = tile.toDataURL();
+      thumb.style.cssText = 'width:76px;height:auto;border-radius:8px;border:1px solid var(--line);display:block;margin-bottom:4px;';
+      const label = document.createElement('div');
+      label.textContent = (i+1)+'枚目';
+      label.style.cssText = 'font-size:10px;color:var(--text-dim);margin-bottom:4px;';
+      const saveBtn = document.createElement('button');
+      saveBtn.textContent = '保存';
+      saveBtn.style.cssText = 'font-size:10px;padding:3px 8px;border-radius:8px;border:1px solid var(--line);background:var(--bg-sheet);color:var(--text-dim);width:100%;';
+      saveBtn.addEventListener('click', ()=> downloadXSplitTile(i));
+      cell.appendChild(thumb); cell.appendChild(label); cell.appendChild(saveBtn);
+      grid.appendChild(cell);
+    }
+  }
+
+  function downloadXSplitTile(i){
+    const tile = xSplitTilesCache[i];
+    if(!tile) return;
+    tile.toBlob(blob=>{
+      if(!blob){ showErrorToast('書き出しに失敗しました'); return; }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `x_split_${i+1}_of_${xSplitN}.png`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(()=>URL.revokeObjectURL(url), 4000);
+    }, 'image/png');
+  }
+
+  document.querySelectorAll('#xSplitCountRow .presetChip').forEach(chip=>{
+    chip.addEventListener('click', ()=>{
+      document.querySelectorAll('#xSplitCountRow .presetChip').forEach(c=>c.classList.remove('sel'));
+      chip.classList.add('sel');
+      xSplitN = +chip.dataset.n;
+      xSplitOffset = 0.5;
+      const slider = document.getElementById('xSplitOffsetSlider');
+      if(slider) slider.value = 50;
+      const val = document.getElementById('xSplitOffsetVal');
+      if(val) val.textContent = 50;
+      renderXSplitPreview();
+    });
+  });
+  const xSplitOffsetSlider = document.getElementById('xSplitOffsetSlider');
+  if(xSplitOffsetSlider){
+    xSplitOffsetSlider.addEventListener('input', ()=>{
+      xSplitOffset = xSplitOffsetSlider.value/100;
+      document.getElementById('xSplitOffsetVal').textContent = xSplitOffsetSlider.value;
+      renderXSplitPreview();
+    });
+  }
+  document.getElementById('doXSplitSaveAllBtn').addEventListener('click', ()=>{
+    if(!xSplitTilesCache.length) return;
+    showToast('保存中…（ブラウザに複数ファイルのダウンロード許可が必要な場合があります）');
+    xSplitTilesCache.forEach((tile, i)=>{ setTimeout(()=> downloadXSplitTile(i), i*400); });
+  });
+  document.getElementById('xSplitOpenBtn').addEventListener('click', ()=>{
+    if(!state.imgW){ showToast('先に写真を読み込んでね'); return; }
+    xSplitSrc = composeFinalCanvas();
+    openSheet('xSplit');
+    renderXSplitPreview();
   });
 
   // Prevent page scroll/bounce & double-tap zoom
